@@ -60,15 +60,20 @@ local Window = SysHubUI:CreateWindow({
     Size = UDim2.fromOffset(760, 490)
 })
 
--- 3. Membuat Tab
-local MainTab = Window:Tab({
-    Title = "Main",
-    Icon = "rbxassetid://10723407389" -- Icon ID atau Lucide Icon
+-- 3. Membuat Tab (Mendukung Asset ID Gambar, Emoji Langsung, atau Kata Kunci)
+local CombatTab = Window:Tab({
+    Title = "Combat",
+    Icon = "combat" -- Kata kunci otomatis: "combat", "teleport", "shop", "pet", dll.
+})
+
+local VisualTab = Window:Tab({
+    Title = "Visuals",
+    Icon = "🔥" -- Emoji langsung bebas
 })
 
 local PlayerTab = Window:Tab({
     Title = "Player",
-    Icon = "rbxassetid://10747373176",
+    Icon = "rbxassetid://10747373176", -- Atau Asset ID gambar resmi Roblox
     PlayerProfile = true -- Otomatis memunculkan Avatar Card & Session Info
 })
 
