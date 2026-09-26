@@ -320,13 +320,14 @@ function SysHubUI:CreateWindow(windowConfig)
     HeaderLine.BorderSizePixel = 0
     HeaderLine.Parent = Header
 
-    -- SysHub S Monogram Logo Emblem (Pojok Kiri Header - Persis Logo Resmi)
+    -- SysHub Hub Logo Emblem (Pojok Kiri Header - Dinamis untuk Semua Hub)
     local LogoEmblem = Instance.new("Frame")
     LogoEmblem.Name = "LogoEmblem"
     LogoEmblem.Size = UDim2.new(0, 26, 0, 26)
     LogoEmblem.Position = UDim2.new(0, 14, 0.5, -13)
     LogoEmblem.BackgroundColor3 = Theme.Primary
     LogoEmblem.BorderSizePixel = 0
+    LogoEmblem.ClipsDescendants = true
     LogoEmblem.Parent = Header
 
     local LogoCorner = Instance.new("UICorner")
@@ -344,14 +345,96 @@ function SysHubUI:CreateWindow(windowConfig)
     LogoStroke.Transparency = 0.4
     LogoStroke.Parent = LogoEmblem
 
-    local LogoIcon = Instance.new("TextLabel")
-    LogoIcon.Text = "S"
-    LogoIcon.Font = Enum.Font.GothamBold
-    LogoIcon.TextSize = 14
-    LogoIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
-    LogoIcon.Size = UDim2.new(1, 0, 1, 0)
-    LogoIcon.BackgroundTransparency = 1
-    LogoIcon.Parent = LogoEmblem
+    local rawHubLogo = windowConfig.Logo or windowConfig.HubLogo or windowConfig.Icon or windowConfig.LogoIcon or windowConfig.Emblem
+    local HubLogoImgInstance = nil
+    local HubLogoTextInstance = nil
+
+    local function ApplyHubLogo(logoVal)
+        if HubLogoImgInstance then
+            HubLogoImgInstance:Destroy()
+            HubLogoImgInstance = nil
+        end
+        if HubLogoTextInstance then
+            HubLogoTextInstance:Destroy()
+            HubLogoTextInstance = nil
+        end
+
+        local isAsset = false
+        local assetUri = ""
+        local textVal = ""
+
+        if type(logoVal) == "number" then
+            isAsset = true
+            assetUri = "rbxassetid://" .. tostring(logoVal)
+        elseif type(logoVal) == "string" and logoVal ~= "" then
+            if logoVal:find("^rbxassetid://") or logoVal:find("^rbxasset://") or logoVal:find("^http") or logoVal:find("^rbxthumb://") then
+                isAsset = true
+                assetUri = logoVal
+            elseif logoVal:match("^%d+$") then
+                isAsset = true
+                assetUri = "rbxassetid://" .. logoVal
+            else
+                local mapped = GetIconChar(logoVal)
+                if mapped and mapped ~= "•" and mapped ~= "📄" then
+                    textVal = mapped
+                else
+                    textVal = logoVal
+                end
+            end
+        end
+
+        -- Fallback Otomatis: Jika tidak ada logo / kosong, gunakan huruf inisial dari TitleText (misal: "SysHub" -> "S", "RockHub" -> "R")
+        if not isAsset and (textVal == "" or not logoVal) then
+            local clean = TitleText:gsub("^%s+", "")
+            local firstChar = clean:sub(1, 1):upper()
+            if firstChar == "" or not firstChar:match("%a") then
+                firstChar = "S"
+            end
+            textVal = firstChar
+        end
+
+        if isAsset then
+            LogoEmblem.BackgroundColor3 = Color3.fromRGB(15, 20, 30)
+            LogoGrad.Enabled = false
+            LogoStroke.Transparency = 0.4
+
+            HubLogoImgInstance = Instance.new("ImageLabel")
+            HubLogoImgInstance.Name = "HubLogoImage"
+            HubLogoImgInstance.Image = assetUri
+            HubLogoImgInstance.Size = UDim2.new(1, -2, 1, -2)
+            HubLogoImgInstance.Position = UDim2.new(0.5, 0, 0.5, 0)
+            HubLogoImgInstance.AnchorPoint = Vector2.new(0.5, 0.5)
+            HubLogoImgInstance.BackgroundTransparency = 1
+            HubLogoImgInstance.ScaleType = Enum.ScaleType.Fit
+            HubLogoImgInstance.Parent = LogoEmblem
+
+            local ImgCorner = Instance.new("UICorner")
+            ImgCorner.CornerRadius = UDim.new(1, 0)
+            ImgCorner.Parent = HubLogoImgInstance
+        else
+            LogoEmblem.BackgroundColor3 = Theme.Primary
+            LogoGrad.Enabled = true
+            LogoStroke.Transparency = 0.4
+
+            HubLogoTextInstance = Instance.new("TextLabel")
+            HubLogoTextInstance.Name = "HubLogoText"
+            HubLogoTextInstance.Text = textVal
+            HubLogoTextInstance.Font = Enum.Font.GothamBold
+            if utf8.len(textVal) and utf8.len(textVal) > 2 then
+                HubLogoTextInstance.TextSize = 10.5
+            elseif utf8.len(textVal) == 2 then
+                HubLogoTextInstance.TextSize = 12
+            else
+                HubLogoTextInstance.TextSize = 14
+            end
+            HubLogoTextInstance.TextColor3 = Color3.fromRGB(255, 255, 255)
+            HubLogoTextInstance.Size = UDim2.new(1, 0, 1, 0)
+            HubLogoTextInstance.BackgroundTransparency = 1
+            HubLogoTextInstance.Parent = LogoEmblem
+        end
+    end
+
+    ApplyHubLogo(rawHubLogo)
 
     -- Current Active Tab Title
     local HeaderTabTitle = Instance.new("TextLabel")
@@ -561,16 +644,12 @@ function SysHubUI:CreateWindow(windowConfig)
     -- Visibility Toggle Logic
     local isVisible = true
     local openButtonInstance = nil
-    local floatingLogoInstance = nil
 
     local function SetUIVisibility(visible)
         isVisible = visible
         MainFrame.Visible = isVisible
         if openButtonInstance then
             openButtonInstance.Visible = not isVisible
-        end
-        if floatingLogoInstance then
-            floatingLogoInstance.Visible = not isVisible
         end
     end
 
@@ -867,18 +946,23 @@ function SysHubUI:CreateWindow(windowConfig)
         UpdateSearch(SearchInput.Text)
     end)
 
-    -- Sleek Dual Minimize Controls: Top Pill & Floating SysHub Logo Button
+    -- Dynamic Logo Setter untuk Script Hub Apapun
+    function WindowHandler:SetLogo(newLogo)
+        ApplyHubLogo(newLogo)
+    end
+
+    -- Sleek Minimize Controls: Top Pill Bar (Bisa di-drag & klik untuk buka UI)
     function WindowHandler:EditOpenButton(cfg)
         cfg = cfg or {}
         local pillTitle = cfg.Title or TitleText
-        local rawPillIcon = cfg.Icon or "egg"
+        local rawPillIcon = cfg.Icon or rawHubLogo or "egg"
         local pillIsAsset = false
         local pillAssetId = ""
         if type(rawPillIcon) == "number" then
             pillIsAsset = true
             pillAssetId = "rbxassetid://" .. tostring(rawPillIcon)
         elseif type(rawPillIcon) == "string" then
-            if rawPillIcon:find("^rbxassetid://") or rawPillIcon:find("^rbxasset://") or rawPillIcon:find("^http") then
+            if rawPillIcon:find("^rbxassetid://") or rawPillIcon:find("^rbxasset://") or rawPillIcon:find("^http") or rawPillIcon:find("^rbxthumb://") then
                 pillIsAsset = true
                 pillAssetId = rawPillIcon
             elseif rawPillIcon:match("^%d+$") then
@@ -896,7 +980,13 @@ function SysHubUI:CreateWindow(windowConfig)
             OpenScreen.Parent = GetGuiParent()
         end
 
-        -- 1. TOP HORIZONTAL PILL BUTTON
+        -- Hapus floating logo lama jika masih ada (mencegah kotak hitam kosong)
+        local oldFloatLogo = OpenScreen:FindFirstChild("SysHubFloatingLogo")
+        if oldFloatLogo then
+            oldFloatLogo:Destroy()
+        end
+
+        -- TOP HORIZONTAL PILL BUTTON
         local Pill = OpenScreen:FindFirstChild("SysHubTopPill")
         if not Pill then
             Pill = Instance.new("TextButton")
@@ -1029,110 +1119,6 @@ function SysHubUI:CreateWindow(windowConfig)
         if pTitleLabel then
             pTitleLabel.Text = pillTitle
         end
-
-        -- 2. FLOATING SYSHUB LOGO BUTTON (Kotak Mengambang Sesuai Gambar)
-        local FloatLogo = OpenScreen:FindFirstChild("SysHubFloatingLogo")
-        if not FloatLogo then
-            FloatLogo = Instance.new("TextButton")
-            FloatLogo.Name = "SysHubFloatingLogo"
-            FloatLogo.Size = UDim2.fromOffset(46, 46)
-            FloatLogo.Position = UDim2.new(0, 24, 0.45, 0)
-            FloatLogo.BackgroundColor3 = Color3.fromRGB(15, 20, 30)
-            FloatLogo.BackgroundTransparency = 0
-            FloatLogo.Text = ""
-            FloatLogo.AutoButtonColor = false
-            FloatLogo.Visible = not isVisible
-            FloatLogo.Parent = OpenScreen
-
-            local FCorner = Instance.new("UICorner")
-            FCorner.CornerRadius = UDim.new(0, 12)
-            FCorner.Parent = FloatLogo
-
-            local FStroke = Instance.new("UIStroke")
-            FStroke.Color = Theme.Primary
-            FStroke.Thickness = 1.8
-            FStroke.Transparency = 0.15
-            FStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-            FStroke.Parent = FloatLogo
-
-            -- Logo Image (SysHub Monogram Blue: rbxassetid://140026247905567)
-            local LogoImage = Instance.new("ImageLabel")
-            LogoImage.Name = "LogoImage"
-            LogoImage.Image = "rbxassetid://140026247905567"
-            LogoImage.Size = UDim2.new(1, -4, 1, -4)
-            LogoImage.Position = UDim2.new(0.5, 0, 0.5, 0)
-            LogoImage.AnchorPoint = Vector2.new(0.5, 0.5)
-            LogoImage.BackgroundTransparency = 1
-            LogoImage.Parent = FloatLogo
-
-            local LICorner = Instance.new("UICorner")
-            LICorner.CornerRadius = UDim.new(0, 10)
-            LICorner.Parent = LogoImage
-
-            -- Fallback Emblem S jika asset id terhalang koneksi
-            local SFallback = Instance.new("TextLabel")
-            SFallback.Name = "SFallback"
-            SFallback.Text = "S"
-            SFallback.Font = Enum.Font.GothamBold
-            SFallback.TextSize = 22
-            SFallback.TextColor3 = Color3.fromRGB(255, 255, 255)
-            SFallback.Size = UDim2.new(1, 0, 1, 0)
-            SFallback.BackgroundTransparency = 1
-            SFallback.Visible = false
-            SFallback.Parent = FloatLogo
-
-            -- Drag Logic untuk Floating Logo (Smooth Mouse & Mobile Touch)
-            local draggingFloat = false
-            local dragStartFloat, startPosFloat
-            local didMoveFloat = false
-
-            FloatLogo.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    draggingFloat = true
-                    didMoveFloat = false
-                    dragStartFloat = input.Position
-                    startPosFloat = FloatLogo.Position
-                end
-            end)
-
-            UserInputService.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    if draggingFloat then
-                        draggingFloat = false
-                        if not didMoveFloat then
-                            SetUIVisibility(true)
-                        end
-                    end
-                end
-            end)
-
-            UserInputService.InputChanged:Connect(function(input)
-                if draggingFloat and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                    local delta = input.Position - dragStartFloat
-                    if delta.Magnitude > 4 then
-                        didMoveFloat = true
-                    end
-                    FloatLogo.Position = UDim2.new(
-                        startPosFloat.X.Scale,
-                        startPosFloat.X.Offset + delta.X,
-                        startPosFloat.Y.Scale,
-                        startPosFloat.Y.Offset + delta.Y
-                    )
-                end
-            end)
-
-            -- Subtle Hover Glow Effect
-            FloatLogo.MouseEnter:Connect(function()
-                Tween(FloatLogo, TweenInfo.new(0.2), { BackgroundColor3 = Theme.SurfaceHover })
-                Tween(FStroke, TweenInfo.new(0.2), { Color = Theme.PrimaryLight })
-            end)
-            FloatLogo.MouseLeave:Connect(function()
-                Tween(FloatLogo, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(15, 20, 30) })
-                Tween(FStroke, TweenInfo.new(0.2), { Color = Theme.Primary })
-            end)
-        end
-
-        floatingLogoInstance = FloatLogo
     end
 
     -- ==============================================================================
@@ -2510,11 +2496,11 @@ function SysHubUI:CreateWindow(windowConfig)
     -- Alias CreateTab = Tab
     WindowHandler.CreateTab = WindowHandler.Tab
 
-    -- Otomatis inisialisasi kontrol minimize ganda (Top Pill & Floating SysHub Logo)
+    -- Otomatis inisialisasi kontrol minimize (Top Pill Bar)
     pcall(function()
         WindowHandler:EditOpenButton({
             Title = TitleText,
-            Icon = "egg"
+            Icon = rawHubLogo or "egg"
         })
     end)
 
@@ -2529,8 +2515,11 @@ function SysHubUI:CreateWindow(windowConfig)
 end
 
 -- Export Global & Return
+SysHubUI.CreateWindow = SysHubUI.CreateWindow
+SysHubUI.MakeWindow = SysHubUI.CreateWindow
 SysHubUI.Notify = SysHubUI.Notify
 if getgenv then
     getgenv().SysHubUI = SysHubUI
+    getgenv().WindUI = SysHubUI
 end
 return SysHubUI
