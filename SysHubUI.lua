@@ -733,41 +733,48 @@ function SysHubUI:CreateWindow(windowConfig)
     local function UpdateSearch(query)
         query = (query or ""):lower():gsub("%s+", "")
         local curTab = WindowHandler.CurrentTab
-        if not curTab or not curTab.Page then return end
+        if not curTab then return end
 
-        for _, card in ipairs(curTab.Page:GetChildren()) do
-            if card:IsA("Frame") and (card.Name:find("Groupbox_") or card.Name:find("Card_")) then
-                local cardTitle = card.Name:gsub("Groupbox_", ""):gsub("Card_", ""):lower():gsub("%s+", "")
-                local cardMatches = (query == "") or cardTitle:find(query, 1, true) ~= nil
-                local content = card:FindFirstChild("Content")
+        local searchTargets = {}
+        if curTab.LeftColumn then table.insert(searchTargets, curTab.LeftColumn) end
+        if curTab.RightColumn and curTab.RightColumn ~= curTab.LeftColumn then table.insert(searchTargets, curTab.RightColumn) end
+        if curTab.Page and #searchTargets == 0 then table.insert(searchTargets, curTab.Page) end
 
-                local anyChildMatches = false
-                if content then
-                    for _, elem in ipairs(content:GetChildren()) do
-                        if elem:IsA("GuiObject") and not elem:IsA("UIPadding") and not elem:IsA("UIListLayout") then
-                            if query == "" then
-                                elem.Visible = true
-                            else
-                                local elemMatches = cardMatches
-                                if not elemMatches then
-                                    for _, desc in ipairs(elem:GetDescendants()) do
-                                        if desc:IsA("TextLabel") and desc.Text:lower():gsub("%s+", ""):find(query, 1, true) then
-                                            elemMatches = true
-                                            break
+        for _, col in ipairs(searchTargets) do
+            for _, card in ipairs(col:GetChildren()) do
+                if card:IsA("Frame") and (card.Name:find("Groupbox_") or card.Name:find("Card_")) then
+                    local cardTitle = card.Name:gsub("Groupbox_", ""):gsub("Card_", ""):lower():gsub("%s+", "")
+                    local cardMatches = (query == "") or cardTitle:find(query, 1, true) ~= nil
+                    local content = card:FindFirstChild("Content")
+
+                    local anyChildMatches = false
+                    if content then
+                        for _, elem in ipairs(content:GetChildren()) do
+                            if elem:IsA("GuiObject") and not elem:IsA("UIPadding") and not elem:IsA("UIListLayout") then
+                                if query == "" then
+                                    elem.Visible = true
+                                else
+                                    local elemMatches = cardMatches
+                                    if not elemMatches then
+                                        for _, desc in ipairs(elem:GetDescendants()) do
+                                            if desc:IsA("TextLabel") and desc.Text:lower():gsub("%s+", ""):find(query, 1, true) then
+                                                elemMatches = true
+                                                break
+                                            end
                                         end
                                     end
+                                    elem.Visible = elemMatches
+                                    if elemMatches then anyChildMatches = true end
                                 end
-                                elem.Visible = elemMatches
-                                if elemMatches then anyChildMatches = true end
                             end
                         end
                     end
-                end
 
-                if query == "" then
-                    card.Visible = true
-                else
-                    card.Visible = cardMatches or anyChildMatches
+                    if query == "" then
+                        card.Visible = true
+                    else
+                        card.Visible = cardMatches or anyChildMatches
+                    end
                 end
             end
         end
@@ -971,29 +978,51 @@ function SysHubUI:CreateWindow(windowConfig)
         Page.CanvasSize = UDim2.new(0, 0, 0, 0)
         Page.Parent = ContentContainer
 
-        -- Layout Halaman Penuh Simetris (Margin Kiri & Kanan Sama Persis 14px)
+        -- DUAL-COLUMN GRID DASHBOARD (Seimbang Sempurna & Tidak Manjang ke Bawah)
         local PagePadding = Instance.new("UIPadding")
-        PagePadding.PaddingTop = UDim.new(0, 12)
-        PagePadding.PaddingBottom = UDim.new(0, 20)
-        PagePadding.PaddingLeft = UDim.new(0, 14)
-        PagePadding.PaddingRight = UDim.new(0, 14)
+        PagePadding.PaddingTop = UDim.new(0, 10)
+        PagePadding.PaddingBottom = UDim.new(0, 16)
+        PagePadding.PaddingLeft = UDim.new(0, 10)
+        PagePadding.PaddingRight = UDim.new(0, 10)
         PagePadding.Parent = Page
 
-        local PageLayout = Instance.new("UIListLayout")
-        PageLayout.Padding = UDim.new(0, 10)
-        PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        PageLayout.Parent = Page
+        local ColumnsContainer = Instance.new("Frame")
+        ColumnsContainer.Name = "DualColumns"
+        ColumnsContainer.Size = UDim2.new(1, 0, 0, 0)
+        ColumnsContainer.AutomaticSize = Enum.AutomaticSize.Y
+        ColumnsContainer.BackgroundTransparency = 1
+        ColumnsContainer.Parent = Page
 
-        -- Alias Container agar kompatibel penuh dengan pemanggilan terdahulu
-        local LeftColumn = Page
-        local RightColumn = Page
+        local LeftColumn = Instance.new("Frame")
+        LeftColumn.Name = "LeftColumn"
+        LeftColumn.Size = UDim2.new(0.5, -5, 0, 0)
+        LeftColumn.Position = UDim2.new(0, 0, 0, 0)
+        LeftColumn.AutomaticSize = Enum.AutomaticSize.Y
+        LeftColumn.BackgroundTransparency = 1
+        LeftColumn.Parent = ColumnsContainer
+
+        local LeftLayout = Instance.new("UIListLayout")
+        LeftLayout.Padding = UDim.new(0, 8)
+        LeftLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        LeftLayout.Parent = LeftColumn
+
+        local RightColumn = Instance.new("Frame")
+        RightColumn.Name = "RightColumn"
+        RightColumn.Size = UDim2.new(0.5, -5, 0, 0)
+        RightColumn.Position = UDim2.new(0.5, 5, 0, 0)
+        RightColumn.AutomaticSize = Enum.AutomaticSize.Y
+        RightColumn.BackgroundTransparency = 1
+        RightColumn.Parent = ColumnsContainer
+
+        local RightLayout = Instance.new("UIListLayout")
+        RightLayout.Padding = UDim.new(0, 8)
+        RightLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        RightLayout.Parent = RightColumn
 
         local TabObject = {
             Button = TabBtn,
             Page = Page,
             Name = tabName,
-            Container = Page,
             LeftColumn = LeftColumn,
             RightColumn = RightColumn,
             SectionCount = 0
@@ -1588,17 +1617,31 @@ function SysHubUI:CreateWindow(windowConfig)
                 if isOpened == nil then isOpened = true end
                 local categoryIcon = GetIconChar(secTitle)
 
-                TabObject.SectionCount = TabObject.SectionCount + 1
+                -- Tentukan Kolom: Masukkan bergantian ke Kolom Kiri atau Kolom Kanan
+                local targetColumn = LeftColumn
+                if secConfig.Side then
+                    if secConfig.Side:lower() == "right" then
+                        targetColumn = RightColumn
+                    else
+                        targetColumn = LeftColumn
+                    end
+                else
+                    TabObject.SectionCount = TabObject.SectionCount + 1
+                    if TabObject.SectionCount % 2 == 0 then
+                        targetColumn = RightColumn
+                    else
+                        targetColumn = LeftColumn
+                    end
+                end
 
-                -- Card Outer Frame (Full-Width Seimbang Sempurna Sisi Kiri & Kanan)
+                -- Card Outer Frame
                 local SecCard = Instance.new("Frame")
                 SecCard.Name = "Groupbox_" .. secTitle
-                SecCard.LayoutOrder = TabObject.SectionCount
                 SecCard.Size = UDim2.new(1, 0, 0, 36)
                 SecCard.AutomaticSize = isOpened and Enum.AutomaticSize.Y or Enum.AutomaticSize.None
                 SecCard.BackgroundColor3 = Theme.Surface
                 SecCard.ClipsDescendants = false
-                SecCard.Parent = Page
+                SecCard.Parent = targetColumn
 
                 local CardCorner = Instance.new("UICorner")
                 CardCorner.CornerRadius = UDim.new(0, 8)
