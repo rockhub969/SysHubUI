@@ -307,7 +307,40 @@ function SysHubUI:CreateWindow(windowConfig)
     Subtitle.BackgroundTransparency = 1
     Subtitle.Parent = Header
 
-    -- Close & Minimize Buttons
+    -- Minimize Button
+    local MinBtn = Instance.new("TextButton")
+    MinBtn.Name = "MinBtn"
+    MinBtn.Text = "─"
+    MinBtn.Font = Enum.Font.GothamBold
+    MinBtn.TextSize = 12
+    MinBtn.TextColor3 = Theme.TextMuted
+    MinBtn.Size = UDim2.new(0, 28, 0, 28)
+    MinBtn.Position = UDim2.new(1, -70, 0.5, -14)
+    MinBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    MinBtn.BackgroundTransparency = 0.95
+    MinBtn.Parent = Header
+
+    local MinCorner = Instance.new("UICorner")
+    MinCorner.CornerRadius = UDim.new(0, 8)
+    MinCorner.Parent = MinBtn
+
+    MinBtn.MouseEnter:Connect(function()
+        Tween(MinBtn, TweenInfo.new(0.2), {
+            BackgroundColor3 = Theme.HoloCyan,
+            BackgroundTransparency = 0.3,
+            TextColor3 = Color3.fromRGB(255, 255, 255)
+        })
+    end)
+
+    MinBtn.MouseLeave:Connect(function()
+        Tween(MinBtn, TweenInfo.new(0.2), {
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+            BackgroundTransparency = 0.95,
+            TextColor3 = Theme.TextMuted
+        })
+    end)
+
+    -- Close Button
     local CloseBtn = Instance.new("TextButton")
     CloseBtn.Name = "CloseBtn"
     CloseBtn.Text = "✕"
@@ -341,9 +374,25 @@ function SysHubUI:CreateWindow(windowConfig)
     end)
 
     local isVisible = true
+    local openButtonInstance = nil
+
+    local function SetUIVisibility(visible)
+        isVisible = visible
+        MainFrame.Visible = isVisible
+        if openButtonInstance then
+            openButtonInstance.Visible = not isVisible
+        end
+    end
+
+    local function ToggleVisibility()
+        SetUIVisibility(not isVisible)
+    end
+
+    MinBtn.MouseButton1Click:Connect(function()
+        SetUIVisibility(false)
+    end)
     CloseBtn.MouseButton1Click:Connect(function()
-        isVisible = false
-        MainFrame.Visible = false
+        SetUIVisibility(false)
     end)
 
     -- Draggable Logic
@@ -385,8 +434,7 @@ function SysHubUI:CreateWindow(windowConfig)
     -- Keybind Visibility Toggle
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if not gameProcessed and input.KeyCode == ToggleKey then
-            isVisible = not isVisible
-            MainFrame.Visible = isVisible
+            ToggleVisibility()
         end
     end)
 
@@ -433,38 +481,127 @@ function SysHubUI:CreateWindow(windowConfig)
         CurrentTab = nil
     }
 
-    -- Floating Mobile Button Handler (Kompatibel dengan WindUI:EditOpenButton)
+    -- Sleek Top Minimize Pill (Persis seperti yang diinginkan pengguna)
     function WindowHandler:EditOpenButton(cfg)
         cfg = cfg or {}
+        local pillTitle = cfg.Title or TitleText
+        local iconEmoji = "✦"
+        if cfg.Icon then
+            if cfg.Icon:lower():find("egg") then
+                iconEmoji = "🥚"
+            elseif cfg.Icon:lower():find("chicken") or cfg.Icon:lower():find("bird") then
+                iconEmoji = "🐔"
+            else
+                iconEmoji = tostring(cfg.Icon)
+            end
+        end
+
         local OpenScreen = Instance.new("ScreenGui")
         OpenScreen.Name = "SysHubOpenBtnGui"
         OpenScreen.ResetOnSpawn = false
+        OpenScreen.DisplayOrder = 999
         OpenScreen.Parent = GetGuiParent()
 
-        local FloatBtn = Instance.new("TextButton")
-        FloatBtn.Name = "SysHubFloatBtn"
-        FloatBtn.Size = UDim2.fromOffset(50, 50)
-        FloatBtn.Position = UDim2.new(0, 20, 0.5, -25)
-        FloatBtn.BackgroundColor3 = Theme.Bg
-        FloatBtn.BackgroundTransparency = 0.2
-        FloatBtn.Text = "✦"
-        FloatBtn.Font = Enum.Font.GothamBold
-        FloatBtn.TextSize = 20
-        FloatBtn.TextColor3 = Theme.HoloCyan
-        FloatBtn.Parent = OpenScreen
+        local Pill = Instance.new("TextButton")
+        Pill.Name = "SysHubTopPill"
+        Pill.AnchorPoint = Vector2.new(0.5, 0)
+        Pill.Size = UDim2.fromOffset(265, 32)
+        Pill.Position = UDim2.new(0.5, 0, 0, 10)
+        Pill.BackgroundColor3 = Theme.Bg
+        Pill.BackgroundTransparency = 0.2
+        Pill.Text = ""
+        Pill.AutoButtonColor = false
+        Pill.Visible = not isVisible
+        Pill.Parent = OpenScreen
 
-        local FCorner = Instance.new("UICorner")
-        FCorner.CornerRadius = UDim.new(1, 0)
-        FCorner.Parent = FloatBtn
+        local PCorner = Instance.new("UICorner")
+        PCorner.CornerRadius = UDim.new(1, 0)
+        PCorner.Parent = Pill
 
-        local FStroke = Instance.new("UIStroke")
-        FStroke.Color = Theme.HoloCyan
-        FStroke.Thickness = 1.5
-        FStroke.Parent = FloatBtn
+        local PStroke = Instance.new("UIStroke")
+        PStroke.Color = Theme.HoloCyan
+        PStroke.Thickness = 1.2
+        PStroke.Transparency = 0.35
+        PStroke.Parent = Pill
 
-        FloatBtn.MouseButton1Click:Connect(function()
-            isVisible = not isVisible
-            MainFrame.Visible = isVisible
+        -- Drag handle icon on left
+        local DragHandle = Instance.new("TextLabel")
+        DragHandle.Text = "✥"
+        DragHandle.Font = Enum.Font.GothamBold
+        DragHandle.TextSize = 13
+        DragHandle.TextColor3 = Theme.HoloCyan
+        DragHandle.Size = UDim2.new(0, 20, 1, 0)
+        DragHandle.Position = UDim2.new(0, 8, 0, 0)
+        DragHandle.BackgroundTransparency = 1
+        DragHandle.Parent = Pill
+
+        -- Divider line
+        local SepLine = Instance.new("Frame")
+        SepLine.Size = UDim2.new(0, 1, 0, 16)
+        SepLine.Position = UDim2.new(0, 28, 0.5, -8)
+        SepLine.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        SepLine.BackgroundTransparency = 0.8
+        SepLine.BorderSizePixel = 0
+        SepLine.Parent = Pill
+
+        -- Icon (Egg / Star)
+        local POrb = Instance.new("TextLabel")
+        POrb.Text = iconEmoji
+        POrb.Font = Enum.Font.GothamBold
+        POrb.TextSize = 13
+        POrb.TextColor3 = Theme.HoloCyan
+        POrb.Size = UDim2.new(0, 20, 1, 0)
+        POrb.Position = UDim2.new(0, 34, 0, 0)
+        POrb.BackgroundTransparency = 1
+        POrb.Parent = Pill
+
+        local PTitle = Instance.new("TextLabel")
+        PTitle.Text = pillTitle
+        PTitle.Font = Enum.Font.GothamBold
+        PTitle.TextSize = 11.5
+        PTitle.TextColor3 = Theme.Text
+        PTitle.Size = UDim2.new(1, -62, 1, 0)
+        PTitle.Position = UDim2.new(0, 56, 0, 0)
+        PTitle.TextXAlignment = Enum.TextXAlignment.Left
+        PTitle.TextTruncate = Enum.TextTruncate.AtEnd
+        PTitle.BackgroundTransparency = 1
+        PTitle.Parent = Pill
+
+        -- Register open button instance for auto-hide/show with window
+        openButtonInstance = Pill
+
+        -- Drag logic on pill
+        local draggingPill = false
+        local dragStartPill, startPosPill
+
+        Pill.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                draggingPill = true
+                dragStartPill = input.Position
+                startPosPill = Pill.Position
+
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        draggingPill = false
+                    end
+                end)
+            end
+        end)
+
+        UserInputService.InputChanged:Connect(function(input)
+            if draggingPill and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                local delta = input.Position - dragStartPill
+                Pill.Position = UDim2.new(
+                    startPosPill.X.Scale,
+                    startPosPill.X.Offset + delta.X,
+                    startPosPill.Y.Scale,
+                    startPosPill.Y.Offset + delta.Y
+                )
+            end
+        end)
+
+        Pill.MouseButton1Click:Connect(function()
+            SetUIVisibility(true)
         end)
     end
 
@@ -529,8 +666,15 @@ function SysHubUI:CreateWindow(windowConfig)
         PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
         PageLayout.Parent = Page
 
+        local PagePadding = Instance.new("UIPadding")
+        PagePadding.PaddingTop = UDim.new(0, 4)
+        PagePadding.PaddingBottom = UDim.new(0, 16)
+        PagePadding.PaddingLeft = UDim.new(0, 4)
+        PagePadding.PaddingRight = UDim.new(0, 8)
+        PagePadding.Parent = Page
+
         PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            Page.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 16)
+            Page.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 24)
         end)
 
         local TabObject = {
@@ -1147,27 +1291,45 @@ function SysHubUI:CreateWindow(windowConfig)
                 }
             end
 
-            -- 7. SECTION (Collapsible Card Section)
+            -- 7. SECTION (Header Card / Section Divider)
             function Elements:Section(secConfig)
                 secConfig = secConfig or {}
                 local secTitle = secConfig.Title or secConfig.Name or "Section"
 
                 local SecContainer = Instance.new("Frame")
                 SecContainer.Name = "Sec_" .. secTitle
-                SecContainer.Size = UDim2.new(1, 0, 0, 24)
+                SecContainer.Size = UDim2.new(1, -6, 0, 26)
                 SecContainer.BackgroundTransparency = 1
                 SecContainer.Parent = targetParent
 
+                local SecPill = Instance.new("Frame")
+                SecPill.Size = UDim2.new(0, 3, 0, 13)
+                SecPill.Position = UDim2.new(0, 2, 0.5, -6.5)
+                SecPill.BackgroundColor3 = Theme.HoloCyan
+                SecPill.BorderSizePixel = 0
+                SecPill.Parent = SecContainer
+                local SPCorner = Instance.new("UICorner")
+                SPCorner.CornerRadius = UDim.new(1, 0)
+                SPCorner.Parent = SecPill
+
                 local SecTitleLabel = Instance.new("TextLabel")
-                SecTitleLabel.Text = "✦ " .. string.upper(secTitle)
+                SecTitleLabel.Text = string.upper(secTitle)
                 SecTitleLabel.Font = Enum.Font.GothamBold
-                SecTitleLabel.TextSize = 11.5
-                SecTitleLabel.TextColor3 = Theme.HoloPurple
+                SecTitleLabel.TextSize = 11
+                SecTitleLabel.TextColor3 = Theme.HoloCyan
                 SecTitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-                SecTitleLabel.Size = UDim2.new(1, 0, 1, 0)
-                SecTitleLabel.Position = UDim2.new(0, 4, 0, 0)
+                SecTitleLabel.Size = UDim2.new(1, -16, 1, 0)
+                SecTitleLabel.Position = UDim2.new(0, 12, 0, 0)
                 SecTitleLabel.BackgroundTransparency = 1
                 SecTitleLabel.Parent = SecContainer
+
+                local SecLine = Instance.new("Frame")
+                SecLine.Size = UDim2.new(1, -8, 0, 1)
+                SecLine.Position = UDim2.new(0, 2, 1, -1)
+                SecLine.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                SecLine.BackgroundTransparency = 0.9
+                SecLine.BorderSizePixel = 0
+                SecLine.Parent = SecContainer
 
                 -- Section inherits all element methods to place inside this page!
                 return BuildElements(targetParent)
