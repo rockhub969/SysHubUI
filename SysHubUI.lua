@@ -978,13 +978,9 @@ function SysHubUI:CreateWindow(windowConfig)
         Page.CanvasSize = UDim2.new(0, 0, 0, 0)
         Page.Parent = ContentContainer
 
-        -- DUAL-COLUMN GRID DASHBOARD (Seimbang Sempurna & Simetris Persis Gambar 2)
-        local PagePadding = Instance.new("UIPadding")
-        PagePadding.PaddingTop = UDim.new(0, 10)
-        PagePadding.PaddingBottom = UDim.new(0, 16)
-        PagePadding.PaddingLeft = UDim.new(0, 10)
-        PagePadding.PaddingRight = UDim.new(0, 10)
-        PagePadding.Parent = Page
+        pcall(function()
+            Page.VerticalScrollBarInset = Enum.ScrollBarInset.None
+        end)
 
         local ColumnsContainer = Instance.new("Frame")
         ColumnsContainer.Name = "DualColumns"
@@ -993,6 +989,14 @@ function SysHubUI:CreateWindow(windowConfig)
         ColumnsContainer.AutomaticSize = Enum.AutomaticSize.Y
         ColumnsContainer.BackgroundTransparency = 1
         ColumnsContainer.Parent = Page
+
+        -- DUAL-COLUMN GRID DASHBOARD (Simetris Sempurna Sisi Kiri & Kanan Persis Gambar 2)
+        local ContainerPadding = Instance.new("UIPadding")
+        ContainerPadding.PaddingTop = UDim.new(0, 10)
+        ContainerPadding.PaddingBottom = UDim.new(0, 16)
+        ContainerPadding.PaddingLeft = UDim.new(0, 12)
+        ContainerPadding.PaddingRight = UDim.new(0, 12)
+        ContainerPadding.Parent = ColumnsContainer
 
         -- Left Column (Sisi Kiri Simetris)
         local LeftColumn = Instance.new("Frame")
@@ -1009,7 +1013,7 @@ function SysHubUI:CreateWindow(windowConfig)
         LeftLayout.SortOrder = Enum.SortOrder.LayoutOrder
         LeftLayout.Parent = LeftColumn
 
-        -- Right Column (Sisi Kanan Simetris dengan Celah Tengah Bersih 12px)
+        -- Right Column (Sisi Kanan Simetris dengan Celah Tengah Bersih 12px - Tetap Sesuai)
         local RightColumn = Instance.new("Frame")
         RightColumn.Name = "RightColumn"
         RightColumn.AnchorPoint = Vector2.new(0, 0)
