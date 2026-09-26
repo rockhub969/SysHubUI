@@ -1184,6 +1184,7 @@ function SysHubUI:CreateWindow(windowConfig)
         end
 
         openButtonInstance = Pill
+        Pill.Visible = not isVisible
 
         -- Perbarui Icon & Title pada Top Pill
         local oldOrb = Pill:FindFirstChild("POrb")
