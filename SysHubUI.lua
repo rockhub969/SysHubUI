@@ -72,9 +72,17 @@ local Theme = {
 
 -- Utility Animation Helper
 local function Tween(instance, info, properties)
-    local anim = TweenService:Create(instance, info, properties)
-    anim:Play()
-    return anim
+    if not instance or typeof(instance) ~= "Instance" then
+        return nil
+    end
+    local success, anim = pcall(function()
+        return TweenService:Create(instance, info, properties)
+    end)
+    if success and anim then
+        anim:Play()
+        return anim
+    end
+    return nil
 end
 
 -- ==============================================================================
@@ -527,16 +535,26 @@ function SysHubUI:CreateWindow(windowConfig)
 
         local TabObject = {
             Button = TabBtn,
-            Page = Page
+            Page = Page,
+            Indicator = TabIndicator,
+            Label = Label
         }
 
         local function ActivateTab()
-            for _, t in pairs(WindowHandler.Tabs) do
-                t.Page.Visible = false
-                Tween(t.Button, TweenInfo.new(0.2), { BackgroundTransparency = 0.96 })
-                Tween(t.Button.Indicator, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
-                t.Button.TextLabel.TextColor3 = Theme.TextMuted
-                t.Button.TextLabel.Font = Enum.Font.GothamMedium
+            for _, t in ipairs(WindowHandler.Tabs) do
+                if t.Page then
+                    t.Page.Visible = false
+                end
+                if t.Button then
+                    Tween(t.Button, TweenInfo.new(0.2), { BackgroundTransparency = 0.96 })
+                end
+                if t.Indicator then
+                    Tween(t.Indicator, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+                end
+                if t.Label then
+                    t.Label.TextColor3 = Theme.TextMuted
+                    t.Label.Font = Enum.Font.GothamMedium
+                end
             end
 
             Page.Visible = true
