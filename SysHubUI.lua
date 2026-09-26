@@ -35,7 +35,7 @@ local function GetGuiParent()
 end
 
 local SysHubUI = {
-    Version = "3.0.0",
+    Version = "3.0.1",
     Windows = {},
     DefaultKeybind = Enum.KeyCode.RightControl
 }
@@ -232,11 +232,24 @@ function SysHubUI:CreateWindow(windowConfig)
     end
 
     local ToggleKey = windowConfig.Keybind or SysHubUI.DefaultKeybind
-    local requestedSize = windowConfig.Size or UDim2.fromOffset(760, 490)
-    -- Pastikan ukuran window lega dan tidak terpotong (minimal lebar 740, tinggi 460)
-    local finalWidth = math.max(requestedSize.X.Offset, 750)
-    local finalHeight = math.max(requestedSize.Y.Offset, 480)
-    local WindowSize = UDim2.fromOffset(finalWidth, finalHeight)
+
+    -- Responsive Viewport Adaptation (Menyesuaikan Layar HP & PC agar TIDAK KEPOTONG)
+    local Camera = workspace.CurrentCamera
+    local vp = Camera and Camera.ViewportSize or Vector2.new(1280, 720)
+
+    local defaultW = 750
+    local defaultH = 480
+    if windowConfig.Size and windowConfig.Size.X.Offset > 0 then
+        defaultW = windowConfig.Size.X.Offset
+        defaultH = windowConfig.Size.Y.Offset
+    end
+
+    -- Pastikan window selalu muat 100% di layar (PC, Tablet, maupun HP)
+    local maxAvailW = math.max(340, vp.X - 16)
+    local maxAvailH = math.max(260, vp.Y - 20)
+    local safeW = math.clamp(defaultW, 340, maxAvailW)
+    local safeH = math.clamp(defaultH, 260, maxAvailH)
+    local WindowSize = UDim2.fromOffset(safeW, safeH)
 
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "SysHub_ObsidianDashboard"
@@ -244,11 +257,12 @@ function SysHubUI:CreateWindow(windowConfig)
     ScreenGui.DisplayOrder = 100
     ScreenGui.Parent = GetGuiParent()
 
-    -- Window Outer Main Frame
+    -- Window Outer Main Frame (AnchorPoint 0.5, 0.5: SELALU DI TENGAH LAYAR)
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
     MainFrame.Size = WindowSize
-    MainFrame.Position = UDim2.new(0.5, -WindowSize.X.Offset / 2, 0.5, -WindowSize.Y.Offset / 2)
+    MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
     MainFrame.BackgroundColor3 = Theme.Bg
     MainFrame.BorderSizePixel = 0
     MainFrame.ClipsDescendants = false
@@ -347,16 +361,16 @@ function SysHubUI:CreateWindow(windowConfig)
     HeaderTabTitle.TextSize = 14.5
     HeaderTabTitle.TextColor3 = Theme.Text
     HeaderTabTitle.TextXAlignment = Enum.TextXAlignment.Left
-    HeaderTabTitle.Size = UDim2.new(0, 180, 1, 0)
-    HeaderTabTitle.Position = UDim2.new(0, 52, 0, 0)
+    HeaderTabTitle.Size = UDim2.new(0, 160, 1, 0)
+    HeaderTabTitle.Position = UDim2.new(0, 50, 0, 0)
     HeaderTabTitle.BackgroundTransparency = 1
     HeaderTabTitle.Parent = Header
 
     -- Central Search Bar Capsule
     local SearchBoxFrame = Instance.new("Frame")
     SearchBoxFrame.Name = "SearchCapsule"
-    SearchBoxFrame.Size = UDim2.new(0, 240, 0, 28)
-    SearchBoxFrame.Position = UDim2.new(0.5, -120, 0.5, -14)
+    SearchBoxFrame.Size = UDim2.new(0, 220, 0, 28)
+    SearchBoxFrame.Position = UDim2.new(0.5, -110, 0.5, -14)
     SearchBoxFrame.BackgroundColor3 = Theme.Surface
     SearchBoxFrame.Parent = Header
 
@@ -429,14 +443,14 @@ function SysHubUI:CreateWindow(windowConfig)
     BellCorner.CornerRadius = UDim.new(0, 6)
     BellCorner.Parent = BellBtn
 
-    -- 2. Drag Handle Button (Image 100% Anti-Tofu Kotak)
+    -- 2. Drag Handle Button (Official Move 4-Way Arrow Icon)
     local DragBtn = Instance.new("ImageButton")
     DragBtn.Name = "DragGrip"
     DragBtn.Size = UDim2.new(0, 26, 0, 26)
     DragBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     DragBtn.BackgroundTransparency = 0.95
     DragBtn.AutoButtonColor = false
-    DragBtn.Image = "rbxassetid://10747373176" -- Lucide Move / 4-way arrow
+    DragBtn.Image = "rbxassetid://6031225882" -- Official Roblox 4-way move cross arrows
     DragBtn.ImageColor3 = Theme.Primary
     DragBtn.ScaleType = Enum.ScaleType.Fit
     DragBtn.Parent = WindowControls
@@ -482,42 +496,84 @@ function SysHubUI:CreateWindow(windowConfig)
 
     BellBtn.MouseButton1Click:Connect(function()
         SysHubUI:Notify({
-            Title = "✦ SysHub Notifications",
+            Title = "⚡ SysHub Notifications",
             Content = "Game: " .. detectedGameName .. "\nStatus: All systems operational",
             Duration = 3,
             Color = Theme.Primary
         })
     end)
 
-    -- Draggable Window Logic (via Header & Drag Grip)
+    -- ==============================================================================
+    -- DRAG & RESIZE ENGINE (BULLETPROOF UNIVERSAL DRAGGING DENGAN CLAMP VIEWPORT)
+    -- ==============================================================================
     local isDragging = false
-    local dragStart, startPos
+    local dragStartMouse = Vector2.new()
+    local dragStartPos = UDim2.new()
 
-    local function OnDragBegan(input)
+    local function StartDragging(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             isDragging = true
-            dragStart = input.Position
-            startPos = MainFrame.Position
-
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    isDragging = false
-                end
-            end)
+            dragStartMouse = Vector2.new(input.Position.X, input.Position.Y)
+            dragStartPos = MainFrame.Position
         end
     end
 
-    Header.InputBegan:Connect(OnDragBegan)
-    DragBtn.InputBegan:Connect(OnDragBegan)
+    Header.InputBegan:Connect(StartDragging)
+    DragBtn.InputBegan:Connect(StartDragging)
+
+    local isResizing = false
+    local resizeStartMouse = Vector2.new()
+    local startFrameSize = Vector2.new()
+
+    -- Reset status drag & resize saat jari diangkat / mouse dilepas di mana saja
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isDragging = false
+            isResizing = false
+        end
+    end)
 
     UserInputService.InputChanged:Connect(function(input)
         if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - dragStart
+            local deltaX = input.Position.X - dragStartMouse.X
+            local deltaY = input.Position.Y - dragStartMouse.Y
+
+            local cam = workspace.CurrentCamera
+            local vpSize = cam and cam.ViewportSize or Vector2.new(1280, 720)
+            local halfW = MainFrame.AbsoluteSize.X / 2
+            local halfH = MainFrame.AbsoluteSize.Y / 2
+
+            -- Clamp aman agar window TIDAK BISA KELUAR DARI LAYAR
+            local maxMoveX = math.max(0, vpSize.X / 2 - halfW - 8)
+            local maxMoveY = math.max(0, vpSize.Y / 2 - halfH - 8)
+
+            local targetOffsetX = math.clamp(dragStartPos.X.Offset + deltaX, -maxMoveX, maxMoveX)
+            local targetOffsetY = math.clamp(dragStartPos.Y.Offset + deltaY, -maxMoveY, maxMoveY)
+
+            MainFrame.Position = UDim2.new(0.5, targetOffsetX, 0.5, targetOffsetY)
+        elseif isResizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local deltaX = input.Position.X - resizeStartMouse.X
+            local deltaY = input.Position.Y - resizeStartMouse.Y
+
+            local cam = workspace.CurrentCamera
+            local vpSize = cam and cam.ViewportSize or Vector2.new(1280, 720)
+            local minW = 340
+            local maxW = math.max(minW, math.min(vpSize.X - 16, 1100))
+            local minH = 260
+            local maxH = math.max(minH, math.min(vpSize.Y - 20, 750))
+
+            local newW = math.clamp(startFrameSize.X + deltaX, minW, maxW)
+            local newH = math.clamp(startFrameSize.Y + deltaY, minH, maxH)
+
+            local actualDeltaX = newW - startFrameSize.X
+            local actualDeltaY = newH - startFrameSize.Y
+
+            MainFrame.Size = UDim2.fromOffset(newW, newH)
             MainFrame.Position = UDim2.new(
-                startPos.X.Scale,
-                startPos.X.Offset + delta.X,
-                startPos.Y.Scale,
-                startPos.Y.Offset + delta.Y
+                0.5,
+                dragStartPos.X.Offset + (actualDeltaX / 2),
+                0.5,
+                dragStartPos.Y.Offset + (actualDeltaY / 2)
             )
         end
     end)
@@ -583,7 +639,7 @@ function SysHubUI:CreateWindow(windowConfig)
     FooterLabel.Font = Enum.Font.Gotham
     FooterLabel.TextSize = 10.5
     FooterLabel.TextColor3 = Theme.PrimaryLight
-    FooterLabel.Size = UDim2.new(1, -36, 1, 0)
+    FooterLabel.Size = UDim2.new(1, -40, 1, 0)
     FooterLabel.Position = UDim2.new(0, 12, 0, 0)
     FooterLabel.TextXAlignment = Enum.TextXAlignment.Center
     FooterLabel.BackgroundTransparency = 1
@@ -598,41 +654,23 @@ function SysHubUI:CreateWindow(windowConfig)
         end)
     end)
 
-    -- Interaktif Handle Resize Grip (Image 100% Anti-Tofu)
+    -- Interaktif Handle Resize Grip (Image Diagonal 2-Way Expand Resmi)
     local ResizeGrip = Instance.new("ImageButton")
     ResizeGrip.Name = "ResizeGrip"
-    ResizeGrip.Size = UDim2.new(0, 14, 0, 14)
-    ResizeGrip.Position = UDim2.new(1, -18, 0.5, -7)
+    ResizeGrip.Size = UDim2.new(0, 16, 0, 16)
+    ResizeGrip.Position = UDim2.new(1, -20, 0.5, -8)
     ResizeGrip.BackgroundTransparency = 1
-    ResizeGrip.Image = "rbxassetid://10747375132" -- Lucide Corner Resize Grip
+    ResizeGrip.Image = "rbxassetid://6031091004" -- Official Roblox Corner Expand Grip
     ResizeGrip.ImageColor3 = Theme.TextDark
     ResizeGrip.ScaleType = Enum.ScaleType.Fit
     ResizeGrip.Parent = Footer
 
-    -- Interactive Resize Logic
-    local isResizing = false
-    local resizeStartMouse, startFrameSize
-
     ResizeGrip.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             isResizing = true
-            resizeStartMouse = input.Position
+            resizeStartMouse = Vector2.new(input.Position.X, input.Position.Y)
             startFrameSize = MainFrame.AbsoluteSize
-
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    isResizing = false
-                end
-            end)
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if isResizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - resizeStartMouse
-            local newW = math.clamp(startFrameSize.X + delta.X, 640, 1100)
-            local newH = math.clamp(startFrameSize.Y + delta.Y, 400, 750)
-            MainFrame.Size = UDim2.fromOffset(newW, newH)
+            dragStartPos = MainFrame.Position
         end
     end)
 
@@ -799,7 +837,7 @@ function SysHubUI:CreateWindow(windowConfig)
         PStroke.Parent = Pill
 
         local DragHandleImg = Instance.new("ImageLabel")
-        DragHandleImg.Image = "rbxassetid://10747373176"
+        DragHandleImg.Image = "rbxassetid://6031225882"
         DragHandleImg.ImageColor3 = Theme.Primary
         DragHandleImg.Size = UDim2.new(0, 14, 0, 14)
         DragHandleImg.Position = UDim2.new(0, 10, 0.5, -7)
@@ -846,12 +884,12 @@ function SysHubUI:CreateWindow(windowConfig)
                 draggingPill = true
                 dragStartPill = input.Position
                 startPosPill = Pill.Position
+            end
+        end)
 
-                input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then
-                        draggingPill = false
-                    end
-                end)
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                draggingPill = false
             end
         end)
 
@@ -958,8 +996,8 @@ function SysHubUI:CreateWindow(windowConfig)
         local PagePadding = Instance.new("UIPadding")
         PagePadding.PaddingTop = UDim.new(0, 10)
         PagePadding.PaddingBottom = UDim.new(0, 16)
-        PagePadding.PaddingLeft = UDim.new(0, 10)
-        PagePadding.PaddingRight = UDim.new(0, 16) -- Ruang aman agar tidak berbenturan dengan scrollbar
+        PagePadding.PaddingLeft = UDim.new(0, 8)
+        PagePadding.PaddingRight = UDim.new(0, 14) -- Ruang aman agar tidak berbenturan dengan scrollbar
         PagePadding.Parent = Page
 
         -- DUAL-COLUMN GRID (Kolom Kiri & Kolom Kanan Seimbang Sempurna)
@@ -972,27 +1010,27 @@ function SysHubUI:CreateWindow(windowConfig)
 
         local LeftColumn = Instance.new("Frame")
         LeftColumn.Name = "LeftColumn"
-        LeftColumn.Size = UDim2.new(0.5, -6, 0, 0)
+        LeftColumn.Size = UDim2.new(0.5, -5, 0, 0)
         LeftColumn.Position = UDim2.new(0, 0, 0, 0)
         LeftColumn.AutomaticSize = Enum.AutomaticSize.Y
         LeftColumn.BackgroundTransparency = 1
         LeftColumn.Parent = ColumnsContainer
 
         local LeftLayout = Instance.new("UIListLayout")
-        LeftLayout.Padding = UDim.new(0, 10)
+        LeftLayout.Padding = UDim.new(0, 8)
         LeftLayout.SortOrder = Enum.SortOrder.LayoutOrder
         LeftLayout.Parent = LeftColumn
 
         local RightColumn = Instance.new("Frame")
         RightColumn.Name = "RightColumn"
-        RightColumn.Size = UDim2.new(0.5, -6, 0, 0)
-        RightColumn.Position = UDim2.new(0.5, 6, 0, 0)
+        RightColumn.Size = UDim2.new(0.5, -5, 0, 0)
+        RightColumn.Position = UDim2.new(0.5, 5, 0, 0)
         RightColumn.AutomaticSize = Enum.AutomaticSize.Y
         RightColumn.BackgroundTransparency = 1
         RightColumn.Parent = ColumnsContainer
 
         local RightLayout = Instance.new("UIListLayout")
-        RightLayout.Padding = UDim.new(0, 10)
+        RightLayout.Padding = UDim.new(0, 8)
         RightLayout.SortOrder = Enum.SortOrder.LayoutOrder
         RightLayout.Parent = RightColumn
 
@@ -1255,10 +1293,10 @@ function SysHubUI:CreateWindow(windowConfig)
                     end
                 end
 
-                local isDragging = false
+                local isDraggingSlider = false
                 TrackBar.InputBegan:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                        isDragging = true
+                        isDraggingSlider = true
                         local percentage = math.clamp((input.Position.X - TrackBar.AbsolutePosition.X) / TrackBar.AbsoluteSize.X, 0, 1)
                         UpdateVal(math.floor(min + (max - min) * percentage), true)
                     end
@@ -1266,12 +1304,12 @@ function SysHubUI:CreateWindow(windowConfig)
 
                 UserInputService.InputEnded:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                        isDragging = false
+                        isDraggingSlider = false
                     end
                 end)
 
                 UserInputService.InputChanged:Connect(function(input)
-                    if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                    if isDraggingSlider and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
                         local percentage = math.clamp((input.Position.X - TrackBar.AbsolutePosition.X) / TrackBar.AbsoluteSize.X, 0, 1)
                         UpdateVal(math.floor(min + (max - min) * percentage), true)
                     end
@@ -1327,7 +1365,7 @@ function SysHubUI:CreateWindow(windowConfig)
                 DLabel.Parent = DTrigger
 
                 local Chevron = Instance.new("ImageLabel")
-                Chevron.Image = "rbxassetid://10709790948" -- Lucide Chevron
+                Chevron.Image = "rbxassetid://10709790948" -- Lucide Chevron Down
                 Chevron.ImageColor3 = Theme.Primary
                 Chevron.Size = UDim2.new(0, 14, 0, 14)
                 Chevron.Position = UDim2.new(1, -22, 0.5, -7)
@@ -2072,7 +2110,7 @@ function SysHubUI:CreateWindow(windowConfig)
     WindowHandler.CreateTab = WindowHandler.Tab
 
     SysHubUI:Notify({
-        Title = "✦ SysHub Electric Dashboard",
+        Title = "⚡ SysHub Electric Dashboard",
         Content = "Press [" .. ToggleKey.Name .. "] to toggle UI",
         Duration = 4,
         Color = Theme.Primary
