@@ -978,51 +978,29 @@ function SysHubUI:CreateWindow(windowConfig)
         Page.CanvasSize = UDim2.new(0, 0, 0, 0)
         Page.Parent = ContentContainer
 
-        -- DUAL-COLUMN GRID DASHBOARD (Seimbang Sempurna & Tidak Manjang ke Bawah)
+        -- Layout Simetris Penuh Sisi Kiri & Sisi Kanan (Persis Seperti Gambar Nomor 2)
         local PagePadding = Instance.new("UIPadding")
         PagePadding.PaddingTop = UDim.new(0, 10)
-        PagePadding.PaddingBottom = UDim.new(0, 16)
-        PagePadding.PaddingLeft = UDim.new(0, 10)
-        PagePadding.PaddingRight = UDim.new(0, 10)
+        PagePadding.PaddingBottom = UDim.new(0, 18)
+        PagePadding.PaddingLeft = UDim.new(0, 12)
+        PagePadding.PaddingRight = UDim.new(0, 12)
         PagePadding.Parent = Page
 
-        local ColumnsContainer = Instance.new("Frame")
-        ColumnsContainer.Name = "DualColumns"
-        ColumnsContainer.Size = UDim2.new(1, 0, 0, 0)
-        ColumnsContainer.AutomaticSize = Enum.AutomaticSize.Y
-        ColumnsContainer.BackgroundTransparency = 1
-        ColumnsContainer.Parent = Page
+        local PageLayout = Instance.new("UIListLayout")
+        PageLayout.Padding = UDim.new(0, 8)
+        PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        PageLayout.Parent = Page
 
-        local LeftColumn = Instance.new("Frame")
-        LeftColumn.Name = "LeftColumn"
-        LeftColumn.Size = UDim2.new(0.5, -5, 0, 0)
-        LeftColumn.Position = UDim2.new(0, 0, 0, 0)
-        LeftColumn.AutomaticSize = Enum.AutomaticSize.Y
-        LeftColumn.BackgroundTransparency = 1
-        LeftColumn.Parent = ColumnsContainer
-
-        local LeftLayout = Instance.new("UIListLayout")
-        LeftLayout.Padding = UDim.new(0, 8)
-        LeftLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        LeftLayout.Parent = LeftColumn
-
-        local RightColumn = Instance.new("Frame")
-        RightColumn.Name = "RightColumn"
-        RightColumn.Size = UDim2.new(0.5, -5, 0, 0)
-        RightColumn.Position = UDim2.new(0.5, 5, 0, 0)
-        RightColumn.AutomaticSize = Enum.AutomaticSize.Y
-        RightColumn.BackgroundTransparency = 1
-        RightColumn.Parent = ColumnsContainer
-
-        local RightLayout = Instance.new("UIListLayout")
-        RightLayout.Padding = UDim.new(0, 8)
-        RightLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        RightLayout.Parent = RightColumn
+        -- Alias Container agar kompatibel penuh
+        local LeftColumn = Page
+        local RightColumn = Page
 
         local TabObject = {
             Button = TabBtn,
             Page = Page,
             Name = tabName,
+            Container = Page,
             LeftColumn = LeftColumn,
             RightColumn = RightColumn,
             SectionCount = 0
@@ -1617,31 +1595,17 @@ function SysHubUI:CreateWindow(windowConfig)
                 if isOpened == nil then isOpened = true end
                 local categoryIcon = GetIconChar(secTitle)
 
-                -- Tentukan Kolom: Masukkan bergantian ke Kolom Kiri atau Kolom Kanan
-                local targetColumn = LeftColumn
-                if secConfig.Side then
-                    if secConfig.Side:lower() == "right" then
-                        targetColumn = RightColumn
-                    else
-                        targetColumn = LeftColumn
-                    end
-                else
-                    TabObject.SectionCount = TabObject.SectionCount + 1
-                    if TabObject.SectionCount % 2 == 0 then
-                        targetColumn = RightColumn
-                    else
-                        targetColumn = LeftColumn
-                    end
-                end
+                TabObject.SectionCount = TabObject.SectionCount + 1
 
-                -- Card Outer Frame
+                -- Card Outer Frame (Full-Width Seimbang Sempurna Sisi Kiri & Kanan - Gambar 2)
                 local SecCard = Instance.new("Frame")
                 SecCard.Name = "Groupbox_" .. secTitle
+                SecCard.LayoutOrder = 10 + TabObject.SectionCount
                 SecCard.Size = UDim2.new(1, 0, 0, 36)
                 SecCard.AutomaticSize = isOpened and Enum.AutomaticSize.Y or Enum.AutomaticSize.None
                 SecCard.BackgroundColor3 = Theme.Surface
                 SecCard.ClipsDescendants = false
-                SecCard.Parent = targetColumn
+                SecCard.Parent = Page
 
                 local CardCorner = Instance.new("UICorner")
                 CardCorner.CornerRadius = UDim.new(0, 8)
@@ -1752,14 +1716,15 @@ function SysHubUI:CreateWindow(windowConfig)
                 return SecElements
             end
 
-            -- 8. USER PROFILE CARD (Komponen Khusus Profil Pemain Persis Gambar 1)
+            -- 8. USER PROFILE CARD (Komponen Khusus Profil Pemain - Ringkas & Gambar 2)
             function Elements:PlayerCard()
                 local Card = Instance.new("Frame")
                 Card.Name = "Card_UserProfileCard"
+                Card.LayoutOrder = 1
                 Card.Size = UDim2.new(1, 0, 0, 0)
                 Card.AutomaticSize = Enum.AutomaticSize.Y
                 Card.BackgroundColor3 = Theme.Surface
-                Card.Parent = LeftColumn
+                Card.Parent = Page
 
                 local CCorner = Instance.new("UICorner")
                 CCorner.CornerRadius = UDim.new(0, 8)
@@ -1824,28 +1789,10 @@ function SysHubUI:CreateWindow(windowConfig)
                 CLayout.SortOrder = Enum.SortOrder.LayoutOrder
                 CLayout.Parent = ContentFrame
 
-                -- Avatar Image Thumbnail
-                local AvatarImg = Instance.new("ImageLabel")
-                AvatarImg.Size = UDim2.new(1, 0, 0, 130)
-                AvatarImg.BackgroundColor3 = Color3.fromRGB(13, 16, 24)
-                AvatarImg.ScaleType = Enum.ScaleType.Fit
-                AvatarImg.Parent = ContentFrame
-
-                local ACorner = Instance.new("UICorner")
-                ACorner.CornerRadius = UDim.new(0, 6)
-                ACorner.Parent = AvatarImg
-
-                pcall(function()
-                    local thumbType = Enum.ThumbnailType.AvatarBust
-                    local thumbSize = Enum.ThumbnailSize.Size420x420
-                    local content = Players:GetUserThumbnailAsync(LocalPlayer.UserId, thumbType, thumbSize)
-                    AvatarImg.Image = content
-                end)
-
-                -- Stat Info Lines
+                -- Full-Width Profile Stats (Persis Seperti Gambar Nomor 2)
                 local function AddStat(label, val, valColor)
                     local Row = Instance.new("Frame")
-                    Row.Size = UDim2.new(1, 0, 0, 16)
+                    Row.Size = UDim2.new(1, 0, 0, 18)
                     Row.BackgroundTransparency = 1
                     Row.Parent = ContentFrame
 
@@ -1855,7 +1802,7 @@ function SysHubUI:CreateWindow(windowConfig)
                     L.TextSize = 11
                     L.TextColor3 = Theme.TextMuted
                     L.TextXAlignment = Enum.TextXAlignment.Left
-                    L.Size = UDim2.new(0, 65, 1, 0)
+                    L.Size = UDim2.new(0, 80, 1, 0)
                     L.BackgroundTransparency = 1
                     L.Parent = Row
 
@@ -1865,8 +1812,8 @@ function SysHubUI:CreateWindow(windowConfig)
                     V.TextSize = 11
                     V.TextColor3 = valColor or Theme.PrimaryLight
                     V.TextXAlignment = Enum.TextXAlignment.Left
-                    V.Size = UDim2.new(1, -70, 1, 0)
-                    V.Position = UDim2.new(0, 68, 0, 0)
+                    V.Size = UDim2.new(1, -85, 1, 0)
+                    V.Position = UDim2.new(0, 85, 0, 0)
                     V.BackgroundTransparency = 1
                     V.Parent = Row
                     return V
@@ -1878,7 +1825,7 @@ function SysHubUI:CreateWindow(windowConfig)
                 AddStat("Executor", execName .. " ready", Theme.Success)
 
                 local CopyUserBtn = Instance.new("TextButton")
-                CopyUserBtn.Size = UDim2.new(1, 0, 0, 26)
+                CopyUserBtn.Size = UDim2.new(1, 0, 0, 24)
                 CopyUserBtn.BackgroundColor3 = Theme.SurfaceAlt
                 CopyUserBtn.Text = "Copy Username"
                 CopyUserBtn.Font = Enum.Font.Gotham
@@ -1903,14 +1850,15 @@ function SysHubUI:CreateWindow(windowConfig)
                 return Card
             end
 
-            -- 9. SESSION & SOCIALS CARD (Komponen Sesi Permainan Persis Gambar 1)
+            -- 9. SESSION & SOCIALS CARD (Komponen Sesi Permainan - Ringkas & Gambar 2)
             function Elements:SessionCard()
                 local Card = Instance.new("Frame")
                 Card.Name = "Card_SessionCard"
+                Card.LayoutOrder = 2
                 Card.Size = UDim2.new(1, 0, 0, 0)
                 Card.AutomaticSize = Enum.AutomaticSize.Y
                 Card.BackgroundColor3 = Theme.Surface
-                Card.Parent = RightColumn
+                Card.Parent = Page
 
                 local CCorner = Instance.new("UICorner")
                 CCorner.CornerRadius = UDim.new(0, 8)
@@ -2019,13 +1967,14 @@ function SysHubUI:CreateWindow(windowConfig)
                     end
                 end)
 
+                -- 2 Tombol Berurutan Penuh Sesuai Gambar Nomor 2
                 local RejoinBtn = Instance.new("TextButton")
-                RejoinBtn.Size = UDim2.new(1, 0, 0, 26)
+                RejoinBtn.Size = UDim2.new(1, 0, 0, 24)
                 RejoinBtn.BackgroundColor3 = Theme.SurfaceAlt
                 RejoinBtn.Text = "Rejoin Place"
                 RejoinBtn.Font = Enum.Font.Gotham
                 RejoinBtn.TextSize = 10.5
-                RejoinBtn.TextColor3 = Theme.Text
+                RejoinBtn.TextColor3 = Theme.TextMuted
                 RejoinBtn.AutoButtonColor = false
                 RejoinBtn.Parent = ContentFrame
 
@@ -2046,7 +1995,7 @@ function SysHubUI:CreateWindow(windowConfig)
                 end)
 
                 local CopyJobBtn = Instance.new("TextButton")
-                CopyJobBtn.Size = UDim2.new(1, 0, 0, 26)
+                CopyJobBtn.Size = UDim2.new(1, 0, 0, 24)
                 CopyJobBtn.BackgroundColor3 = Theme.SurfaceAlt
                 CopyJobBtn.Text = "Copy Job ID"
                 CopyJobBtn.Font = Enum.Font.Gotham
@@ -2106,4 +2055,7 @@ end
 
 -- Export Global & Return
 SysHubUI.Notify = SysHubUI.Notify
+if getgenv then
+    getgenv().SysHubUI = SysHubUI
+end
 return SysHubUI
