@@ -1177,7 +1177,9 @@ function SysHubUI:CreateWindow(windowConfig)
 
                 local ToggleObj = { Value = state }
 
-                local function UpdateState(val)
+                local function UpdateState(...)
+                    local args = {...}
+                    local val = (args[1] == ToggleObj or (type(args[1]) == "table" and args[1].Value ~= nil)) and args[2] or args[1]
                     state = (val == true)
                     ToggleObj.Value = state
                     local targetPos = state and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
@@ -1310,7 +1312,11 @@ function SysHubUI:CreateWindow(windowConfig)
                     end
                 end)
 
-                SliderObj.Set = function(v) UpdateVal(tonumber(v) or min, true) end
+                SliderObj.Set = function(...)
+                    local args = {...}
+                    local v = (args[1] == SliderObj or (type(args[1]) == "table" and args[1].Value ~= nil)) and args[2] or args[1]
+                    UpdateVal(tonumber(v) or min, true)
+                end
                 SliderObj.SetValue = SliderObj.Set
                 return SliderObj
             end
@@ -1383,14 +1389,19 @@ function SysHubUI:CreateWindow(windowConfig)
                 local DropdownObj = { Value = selected, Values = options }
 
                 local function FormatLabel()
+                    local cleanName = tostring(name):gsub("[:%s]+$", "")
                     if isMulti then
                         if type(selected) == "table" and #selected > 0 then
-                            DLabel.Text = name .. ": (" .. #selected .. " Selected)"
+                            DLabel.Text = cleanName .. ": (" .. #selected .. " Selected)"
                         else
-                            DLabel.Text = name .. ": (None)"
+                            DLabel.Text = cleanName .. ": (None)"
                         end
                     else
-                        DLabel.Text = name .. ": " .. tostring(selected or "-")
+                        local displayVal = selected
+                        if type(selected) == "table" then
+                            displayVal = selected[1] or selected.Title or selected.Name or selected.Text or "-"
+                        end
+                        DLabel.Text = cleanName .. ": " .. tostring(displayVal or "-")
                     end
                 end
                 FormatLabel()
@@ -1401,10 +1412,11 @@ function SysHubUI:CreateWindow(windowConfig)
                     end
 
                     for _, opt in ipairs(options) do
+                        local optText = tostring(type(opt) == "table" and (opt.Title or opt.Name or opt[1]) or opt)
                         local OptBtn = Instance.new("TextButton")
                         OptBtn.Size = UDim2.new(1, -4, 0, 26)
                         OptBtn.BackgroundColor3 = Color3.fromRGB(22, 28, 40)
-                        OptBtn.Text = tostring(opt)
+                        OptBtn.Text = optText
                         OptBtn.Font = Enum.Font.Gotham
                         OptBtn.TextSize = 11
 
@@ -1461,7 +1473,9 @@ function SysHubUI:CreateWindow(windowConfig)
                     Tween(Chevron, TweenInfo.new(0.2), { Rotation = isExpanded and 180 or 0 })
                 end)
 
-                DropdownObj.Set = function(v)
+                DropdownObj.Set = function(...)
+                    local args = {...}
+                    local v = (args[1] == DropdownObj or (type(args[1]) == "table" and args[1].Values ~= nil)) and args[2] or args[1]
                     selected = v
                     DropdownObj.Value = selected
                     FormatLabel()
@@ -1471,20 +1485,41 @@ function SysHubUI:CreateWindow(windowConfig)
                 DropdownObj.SetValue = DropdownObj.Set
                 DropdownObj.Select = DropdownObj.Set
 
-                DropdownObj.SetValues = function(newOpts)
-                    options = newOpts or {}
+                DropdownObj.SetValues = function(...)
+                    local args = {...}
+                    local newOpts = (args[1] == DropdownObj or (type(args[1]) == "table" and args[1].Values ~= nil)) and args[2] or args[1]
+                    options = (type(newOpts) == "table") and newOpts or {}
                     DropdownObj.Values = options
                     RenderOptions()
                 end
 
-                DropdownObj.Refresh = function(newOpts, newDefault)
-                    options = newOpts or {}
+                DropdownObj.Refresh = function(...)
+                    local args = {...}
+                    local offset = (args[1] == DropdownObj or (type(args[1]) == "table" and args[1].Values ~= nil)) and 1 or 0
+                    local newOpts = args[1 + offset]
+                    local newDefault = args[2 + offset]
+
+                    options = (type(newOpts) == "table") and newOpts or {}
                     DropdownObj.Values = options
-                    if newDefault ~= nil then
+
+                    if newDefault ~= nil and type(newDefault) ~= "boolean" then
                         selected = newDefault
                         DropdownObj.Value = selected
-                        FormatLabel()
+                    elseif newDefault == true then
+                        -- Preserve selection jika masih ada di options baru, jika tidak ada fallback ke yang pertama
+                        local found = false
+                        for _, o in ipairs(options) do
+                            if o == selected then found = true break end
+                        end
+                        if not found and #options > 0 then
+                            selected = options[1]
+                            DropdownObj.Value = selected
+                        end
+                    elseif #options > 0 and (selected == nil or selected == "") then
+                        selected = options[1]
+                        DropdownObj.Value = selected
                     end
+                    FormatLabel()
                     RenderOptions()
                 end
 
@@ -1547,8 +1582,10 @@ function SysHubUI:CreateWindow(windowConfig)
                     task.spawn(callback, Box.Text)
                 end)
 
-                InputObj.Set = function(newText)
-                    Box.Text = tostring(newText)
+                InputObj.Set = function(...)
+                    local args = {...}
+                    local newText = (args[1] == InputObj or (type(args[1]) == "table" and args[1].Value ~= nil)) and args[2] or args[1]
+                    Box.Text = tostring(newText or "")
                     InputObj.Value = Box.Text
                     task.spawn(callback, Box.Text)
                 end
@@ -1613,8 +1650,16 @@ function SysHubUI:CreateWindow(windowConfig)
                 PDesc.Parent = PFrame
 
                 return {
-                    SetTitle = function(self, t) PTitle.Text = tostring(t) end,
-                    SetDesc = function(self, d) PDesc.Text = tostring(d) end,
+                    SetTitle = function(...)
+                        local args = {...}
+                        local t = (type(args[1]) == "table" and args[2] ~= nil) and args[2] or args[1]
+                        PTitle.Text = tostring(t or "")
+                    end,
+                    SetDesc = function(...)
+                        local args = {...}
+                        local d = (type(args[1]) == "table" and args[2] ~= nil) and args[2] or args[1]
+                        PDesc.Text = tostring(d or "")
+                    end,
                     Instance = PFrame
                 }
             end
