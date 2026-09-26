@@ -54,6 +54,35 @@ SysHubUI.Creator = {
     end
 }
 
+-- Helper Asset & Image URL Resolver (Support Asset ID, Roblox Decal, & HTTP/HTTPS Custom Assets)
+local function ResolveAsset(uri)
+    if not uri or uri == "" then return "" end
+    if type(uri) == "number" then return "rbxassetid://" .. tostring(uri) end
+    if type(uri) == "string" then
+        if uri:find("^rbxassetid://") or uri:find("^rbxasset://") or uri:find("^rbxthumb://") then
+            return uri
+        elseif uri:match("^%d+$") then
+            return "rbxassetid://" .. uri
+        elseif uri:find("^http") then
+            local getasset = getcustomasset or getsynasset
+            if getasset and isfile and writefile then
+                local safeHash = uri:gsub("[^%w]", ""):sub(-20)
+                local fileName = "SysHub_AssetCache_" .. safeHash .. ".png"
+                if not isfile(fileName) then
+                    local success, imgData = pcall(function() return game:HttpGet(uri) end)
+                    if success and imgData then
+                        writefile(fileName, imgData)
+                    else
+                        return uri
+                    end
+                end
+                return getasset(fileName)
+            end
+        end
+    end
+    return uri
+end
+
 -- ==============================================================================
 -- THEME: SYSHUB ELECTRIC BLUE PALETTE (SESUAI LOGO RESMI SYSHUB)
 -- ==============================================================================
@@ -367,12 +396,10 @@ function SysHubUI:CreateWindow(windowConfig)
             isAsset = true
             assetUri = "rbxassetid://" .. tostring(logoVal)
         elseif type(logoVal) == "string" and logoVal ~= "" then
-            if logoVal:find("^rbxassetid://") or logoVal:find("^rbxasset://") or logoVal:find("^http") or logoVal:find("^rbxthumb://") then
+            local resolved = ResolveAsset(logoVal)
+            if logoVal:find("^rbxassetid://") or logoVal:find("^rbxasset://") or logoVal:find("^http") or logoVal:find("^rbxthumb://") or logoVal:match("^%d+$") or (resolved and resolved ~= logoVal) then
                 isAsset = true
-                assetUri = logoVal
-            elseif logoVal:match("^%d+$") then
-                isAsset = true
-                assetUri = "rbxassetid://" .. logoVal
+                assetUri = resolved
             else
                 local mapped = GetIconChar(logoVal)
                 if mapped and mapped ~= "•" and mapped ~= "📄" then
@@ -641,20 +668,86 @@ function SysHubUI:CreateWindow(windowConfig)
         end
     end)
 
-    -- Visibility Toggle Logic
+    -- Visibility Toggle Logic & Window Event Listeners (Full WindUI & External Icon Compatibility)
     local isVisible = true
     local openButtonInstance = nil
+    local onOpenCallbacks = {}
+    local onCloseCallbacks = {}
+
+    local WindowHandler = {
+        Tabs = {},
+        CurrentTab = nil,
+        IsOpen = true,
+        Visible = true
+    }
 
     local function SetUIVisibility(visible)
         isVisible = visible
         MainFrame.Visible = isVisible
+        WindowHandler.IsOpen = isVisible
+        WindowHandler.Visible = isVisible
+
         if openButtonInstance then
             openButtonInstance.Visible = not isVisible
+        end
+
+        if visible then
+            for _, cb in ipairs(onOpenCallbacks) do
+                pcall(cb)
+            end
+        else
+            for _, cb in ipairs(onCloseCallbacks) do
+                pcall(cb)
+            end
         end
     end
 
     local function ToggleVisibility()
         SetUIVisibility(not isVisible)
+    end
+
+    function WindowHandler:Toggle()
+        ToggleVisibility()
+        return isVisible
+    end
+    WindowHandler.ToggleWindow = WindowHandler.Toggle
+
+    function WindowHandler:Open()
+        SetUIVisibility(true)
+    end
+
+    function WindowHandler:Close()
+        SetUIVisibility(false)
+    end
+
+    function WindowHandler:SetVisible(val)
+        SetUIVisibility(val)
+    end
+
+    function WindowHandler:OnOpen(cb)
+        if type(cb) == "function" then
+            table.insert(onOpenCallbacks, cb)
+            if isVisible then
+                pcall(cb)
+            end
+        end
+    end
+
+    function WindowHandler:OnClose(cb)
+        if type(cb) == "function" then
+            table.insert(onCloseCallbacks, cb)
+            if not isVisible then
+                pcall(cb)
+            end
+        end
+    end
+
+    function WindowHandler:Destroy()
+        pcall(function() ScreenGui:Destroy() end)
+        pcall(function()
+            local ob = GetGuiParent():FindFirstChild("SysHubOpenBtnGui")
+            if ob then ob:Destroy() end
+        end)
     end
 
     MinBtn.MouseButton1Click:Connect(function()
@@ -886,10 +979,8 @@ function SysHubUI:CreateWindow(windowConfig)
         return "🔹"
     end
 
-    local WindowHandler = {
-        Tabs = {},
-        CurrentTab = nil
-    }
+    WindowHandler.Tabs = WindowHandler.Tabs or {}
+    WindowHandler.CurrentTab = nil
 
     -- REAL-TIME LIVE SEARCH FILTER ENGINE
     local function UpdateSearch(query)
@@ -954,22 +1045,6 @@ function SysHubUI:CreateWindow(windowConfig)
     -- Sleek Minimize Controls: Top Pill Bar (Bisa di-drag & klik untuk buka UI)
     function WindowHandler:EditOpenButton(cfg)
         cfg = cfg or {}
-        local pillTitle = cfg.Title or TitleText
-        local rawPillIcon = cfg.Icon or rawHubLogo or "egg"
-        local pillIsAsset = false
-        local pillAssetId = ""
-        if type(rawPillIcon) == "number" then
-            pillIsAsset = true
-            pillAssetId = "rbxassetid://" .. tostring(rawPillIcon)
-        elseif type(rawPillIcon) == "string" then
-            if rawPillIcon:find("^rbxassetid://") or rawPillIcon:find("^rbxasset://") or rawPillIcon:find("^http") or rawPillIcon:find("^rbxthumb://") then
-                pillIsAsset = true
-                pillAssetId = rawPillIcon
-            elseif rawPillIcon:match("^%d+$") then
-                pillIsAsset = true
-                pillAssetId = "rbxassetid://" .. rawPillIcon
-            end
-        end
 
         local OpenScreen = GetGuiParent():FindFirstChild("SysHubOpenBtnGui")
         if not OpenScreen then
@@ -984,6 +1059,27 @@ function SysHubUI:CreateWindow(windowConfig)
         local oldFloatLogo = OpenScreen:FindFirstChild("SysHubFloatingLogo")
         if oldFloatLogo then
             oldFloatLogo:Destroy()
+        end
+
+        -- Opsi mematikan/menyembunyikan Top Pill (misal jika script memakai floating icon eksternal seperti iconsys.lua)
+        if cfg.Enabled == false or cfg.Visible == false or cfg.Hide == true then
+            if openButtonInstance then
+                openButtonInstance.Visible = false
+                openButtonInstance = nil
+            end
+            local p = OpenScreen:FindFirstChild("SysHubTopPill")
+            if p then p.Visible = false end
+            return
+        end
+
+        local pillTitle = cfg.Title or TitleText
+        local rawPillIcon = cfg.Icon or rawHubLogo or "egg"
+        local pillIsAsset = false
+        local pillAssetId = ""
+        local resolvedAsset = ResolveAsset(rawPillIcon)
+        if resolvedAsset and resolvedAsset ~= "" and (type(rawPillIcon) == "number" or (type(rawPillIcon) == "string" and (rawPillIcon:find("^rbxasset") or rawPillIcon:find("^http") or rawPillIcon:match("^%d+$") or resolvedAsset:find("SysHub_AssetCache")))) then
+            pillIsAsset = true
+            pillAssetId = resolvedAsset
         end
 
         -- TOP HORIZONTAL PILL BUTTON
