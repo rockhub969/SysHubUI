@@ -561,12 +561,16 @@ function SysHubUI:CreateWindow(windowConfig)
     -- Visibility Toggle Logic
     local isVisible = true
     local openButtonInstance = nil
+    local floatingLogoInstance = nil
 
     local function SetUIVisibility(visible)
         isVisible = visible
         MainFrame.Visible = isVisible
         if openButtonInstance then
             openButtonInstance.Visible = not isVisible
+        end
+        if floatingLogoInstance then
+            floatingLogoInstance.Visible = not isVisible
         end
     end
 
@@ -696,31 +700,110 @@ function SysHubUI:CreateWindow(windowConfig)
     ContentContainer.ClipsDescendants = true
     ContentContainer.Parent = MainFrame
 
-    -- Helper Icon Matcher Komprehensif (100% Emoji Standar Anti-Tofu Kotak)
+    -- Helper Icon Matcher Komprehensif (100% Emoji Standar Anti-Tofu Kotak & Universal Multi-Game)
     local function GetIconChar(iconName)
         if not iconName then return "🔹" end
-        local l = iconName:lower()
-        if l:find("user") or l:find("player") or l:find("profile") then return "👤"
-        elseif l:find("farm") or l:find("sprout") or l:find("game") then return "🎮"
-        elseif l:find("coop") or l:find("feeder") or l:find("recycler") or l:find("warehouse") then return "🌾"
-        elseif l:find("flock") or l:find("feather") or l:find("ayam") or l:find("chicken") then return "🐔"
-        elseif l:find("sell") or l:find("coin") or l:find("money") then return "💰"
-        elseif l:find("promote") or l:find("fuse") or l:find("roll") or l:find("charm") or l:find("fav") then return "✨"
-        elseif l:find("tower") or l:find("castle") then return "🏰"
-        elseif l:find("sword") or l:find("dungeon") or l:find("boss") or l:find("goose") or l:find("arena") or l:find("battle") then return "⚔️"
-        elseif l:find("ufo") or l:find("chaos") then return "🛸"
-        elseif l:find("event") or l:find("diamond") or l:find("gem") then return "💎"
-        elseif l:find("reward") or l:find("gift") or l:find("claim") or l:find("code") or l:find("milestone") then return "🎁"
-        elseif l:find("misc") or l:find("tool") or l:find("pickaxe") then return "⛏️"
-        elseif l:find("server") then return "🌐"
-        elseif l:find("fps") or l:find("boost") or l:find("speed") or l:find("fast") then return "⚡"
-        elseif l:find("config") or l:find("setting") or l:find("gear") or l:find("manager") then return "⚙️"
-        elseif l:find("esp") or l:find("visual") then return "👁️"
-        elseif l:find("streamer") or l:find("video") then return "🎥"
-        elseif l:find("webhook") or l:find("link") then return "🔗"
-        elseif l:find("info") or l:find("about") or l:find("help") or l:find("problem") then return "ℹ️"
-        elseif l:find("egg") or l:find("ancient") or l:find("jurassic") then return "🥚"
+        local str = tostring(iconName)
+
+        -- 1. Cek jika input sudah berupa emoji langsung (karakter UTF-8 multi-byte)
+        for i = 1, #str do
+            if str:byte(i) >= 128 then
+                return str
+            end
         end
+
+        local l = str:lower()
+
+        -- 2. User & Player Profiles
+        if l:find("user") or l:find("player") or l:find("profile") or l:find("avatar") or l:find("character") or l:find("me") then return "👤"
+        -- 3. Combat, Attack, Swords & PvP
+        elseif l:find("sword") or l:find("combat") or l:find("attack") or l:find("blade") or l:find("pvp") or l:find("dungeon") or l:find("boss") or l:find("goose") or l:find("arena") or l:find("battle") or l:find("fight") or l:find("hit") or l:find("damage") then return "⚔️"
+        -- 4. Guns, Shooting & Weaponry
+        elseif l:find("gun") or l:find("shoot") or l:find("bullet") or l:find("rifle") or l:find("sniper") or l:find("weapon") or l:find("ammo") then return "🔫"
+        -- 5. Target, Crosshair & Aimbot
+        elseif l:find("target") or l:find("crosshair") or l:find("aimbot") or l:find("aim") then return "🎯"
+        -- 6. Teleport, Waypoints & Navigation
+        elseif l:find("teleport") or l:find("tp") or l:find("waypoint") or l:find("portal") or l:find("warp") or l:find("goto") or l:find("location") or l:find("coord") or l:find("pos") then return "📍"
+        -- 7. Maps & Worlds
+        elseif l:find("map") or l:find("island") or l:find("world") or l:find("zone") or l:find("area") or l:find("realm") then return "🗺️"
+        -- 8. Farm, Automation & Loops
+        elseif l:find("auto") or l:find("bot") or l:find("loop") or l:find("farm") or l:find("grind") or l:find("macro") then return "🤖"
+        -- 9. Crops, Plants & Harvest
+        elseif l:find("sprout") or l:find("crop") or l:find("plant") or l:find("tree") or l:find("harvest") or l:find("seed") or l:find("wood") then return "🌾"
+        -- 10. Coop, Buildings & Base
+        elseif l:find("coop") or l:find("feeder") or l:find("recycler") or l:find("warehouse") or l:find("barn") or l:find("house") or l:find("home") or l:find("base") then return "🏠"
+        -- 11. Animals, Flock & Chickens
+        elseif l:find("flock") or l:find("feather") or l:find("ayam") or l:find("chicken") or l:find("bird") or l:find("cow") or l:find("sheep") then return "🐔"
+        -- 12. Pets & Companions
+        elseif l:find("pet") or l:find("pets") or l:find("dog") or l:find("cat") or l:find("animal") or l:find("creature") then return "🐾"
+        -- 13. Eggs, Incubators & Jurassic
+        elseif l:find("egg") or l:find("ancient") or l:find("jurassic") or l:find("hatch") or l:find("incubator") or l:find("nest") then return "🥚"
+        -- 14. Fishing & Water
+        elseif l:find("fish") or l:find("fishing") or l:find("rod") or l:find("bait") or l:find("sea") or l:find("ocean") or l:find("water") or l:find("boat") then return "🎣"
+        -- 15. Fruit & Blox Fruits
+        elseif l:find("fruit") or l:find("devil") or l:find("bloxfruit") or l:find("apple") then return "🍎"
+        -- 16. Magic, Potions & Wand
+        elseif l:find("magic") or l:find("wand") or l:find("spell") or l:find("potion") or l:find("brew") or l:find("witch") then return "🪄"
+        -- 17. Shop, Store & Cart
+        elseif l:find("shop") or l:find("store") or l:find("buy") or l:find("cart") or l:find("market") or l:find("trade") or l:find("merchant") or l:find("vendor") then return "🛒"
+        -- 18. Money, Coins & Currency
+        elseif l:find("sell") or l:find("coin") or l:find("money") or l:find("cash") or l:find("gold") or l:find("yen") or l:find("beli") or l:find("dollar") or l:find("rich") then return "💰"
+        -- 19. Diamonds & Gems
+        elseif l:find("diamond") or l:find("gem") or l:find("emerald") or l:find("crystal") or l:find("ruby") then return "💎"
+        -- 20. Promote, Fuse, Reforge & Upgrades
+        elseif l:find("promote") or l:find("fuse") or l:find("roll") or l:find("charm") or l:find("fav") or l:find("reforge") or l:find("enchant") or l:find("upgrade") or l:find("evolve") then return "✨"
+        -- 21. Stars, Sparkles & Auras
+        elseif l:find("sparkle") or l:find("sparkles") or l:find("star") or l:find("stars") or l:find("glow") or l:find("shine") or l:find("aura") then return "⭐"
+        -- 22. Quests & Missions
+        elseif l:find("quest") or l:find("mission") or l:find("task") or l:find("job") or l:find("bounty") or l:find("contract") then return "📜"
+        -- 23. Stats, Rank & Levels
+        elseif l:find("stat") or l:find("stats") or l:find("rank") or l:find("level") or l:find("exp") or l:find("score") or l:find("leaderboard") then return "📊"
+        -- 24. Inventory & Items
+        elseif l:find("inventory") or l:find("bag") or l:find("backpack") or l:find("item") or l:find("items") or l:find("chest") or l:find("vault") or l:find("storage") or l:find("box") then return "🎒"
+        -- 25. Shield & Defense
+        elseif l:find("shield") or l:find("armor") or l:find("defense") or l:find("defend") or l:find("godmode") or l:find("immortal") or l:find("protect") then return "🛡️"
+        -- 26. Health & Healing
+        elseif l:find("health") or l:find("heal") or l:find("hp") or l:find("heart") or l:find("life") or l:find("regen") then return "❤️"
+        -- 27. Speed, Fly & Mobility
+        elseif l:find("speed") or l:find("walkspeed") or l:find("fly") or l:find("flight") or l:find("rocket") or l:find("boost") or l:find("dash") or l:find("noclip") or l:find("jump") then return "🚀"
+        -- 28. Lightning & FPS
+        elseif l:find("fps") or l:find("fast") or l:find("electric") or l:find("thunder") or l:find("volt") or l:find("zap") then return "⚡"
+        -- 29. Fire & Flame
+        elseif l:find("fire") or l:find("flame") or l:find("burn") or l:find("heat") or l:find("inferno") then return "🔥"
+        -- 30. Skull, Death & Danger
+        elseif l:find("skull") or l:find("death") or l:find("dead") or l:find("poison") or l:find("toxic") or l:find("danger") or l:find("risk") then return "💀"
+        -- 31. UFO, Alien & Space
+        elseif l:find("ufo") or l:find("chaos") or l:find("alien") or l:find("space") then return "🛸"
+        -- 32. Event, Rewards & Codes
+        elseif l:find("event") or l:find("reward") or l:find("gift") or l:find("claim") or l:find("code") or l:find("codes") or l:find("milestone") or l:find("present") or l:find("daily") or l:find("free") then return "🎁"
+        -- 33. Trophy, Crown & VIP
+        elseif l:find("trophy") or l:find("winner") or l:find("badge") or l:find("achievement") or l:find("cup") or l:find("crown") or l:find("king") or l:find("vip") or l:find("premium") then return "👑"
+        -- 34. Tools, Mining & Misc
+        elseif l:find("misc") or l:find("tool") or l:find("pickaxe") or l:find("mine") or l:find("ore") or l:find("rock") or l:find("hammer") then return "⛏️"
+        -- 35. Server & Globe
+        elseif l:find("server") or l:find("network") or l:find("web") or l:find("global") or l:find("ping") then return "🌐"
+        -- 36. Visuals & ESP
+        elseif l:find("esp") or l:find("visual") or l:find("visuals") or l:find("wallhack") or l:find("chams") or l:find("tracer") or l:find("eye") or l:find("vision") then return "👁️"
+        -- 37. Streamer & Video
+        elseif l:find("streamer") or l:find("video") or l:find("record") or l:find("cam") or l:find("camera") or l:find("youtube") or l:find("tiktok") then return "🎥"
+        -- 38. Webhook & Discord
+        elseif l:find("webhook") or l:find("link") or l:find("discord") or l:find("chat") or l:find("social") or l:find("message") then return "🔗"
+        -- 39. Config & Settings
+        elseif l:find("config") or l:find("setting") or l:find("settings") or l:find("gear") or l:find("manager") or l:find("option") or l:find("pref") then return "⚙️"
+        -- 40. Info, Help & Rules
+        elseif l:find("info") or l:find("about") or l:find("help") or l:find("problem") or l:find("faq") or l:find("guide") or l:find("book") or l:find("rule") then return "ℹ️"
+        -- 41. Security, Keys & Locks
+        elseif l:find("key") or l:find("lock") or l:find("unlock") or l:find("whitelist") or l:find("auth") or l:find("pass") then return "🔑"
+        -- 42. Trash & Reset
+        elseif l:find("trash") or l:find("delete") or l:find("remove") or l:find("clear") or l:find("reset") then return "🗑️"
+        -- 43. Time & Cooldowns
+        elseif l:find("time") or l:find("clock") or l:find("timer") or l:find("cooldown") or l:find("delay") or l:find("wait") then return "⏱️"
+        -- 44. Audio, Music & Sound
+        elseif l:find("music") or l:find("sound") or l:find("audio") or l:find("volume") or l:find("song") or l:find("mute") then return "🎵"
+        -- 45. Castle & Towers
+        elseif l:find("tower") or l:find("castle") then return "🏰"
+        end
+
         return "🔹"
     end
 
@@ -784,115 +867,272 @@ function SysHubUI:CreateWindow(windowConfig)
         UpdateSearch(SearchInput.Text)
     end)
 
-    -- Sleek Top Minimize Pill (Tampil saat window di-minimize)
+    -- Sleek Dual Minimize Controls: Top Pill & Floating SysHub Logo Button
     function WindowHandler:EditOpenButton(cfg)
         cfg = cfg or {}
         local pillTitle = cfg.Title or TitleText
-        local iconEmoji = "🥚"
-        if cfg.Icon then
-            iconEmoji = GetIconChar(cfg.Icon)
+        local rawPillIcon = cfg.Icon or "egg"
+        local pillIsAsset = false
+        local pillAssetId = ""
+        if type(rawPillIcon) == "number" then
+            pillIsAsset = true
+            pillAssetId = "rbxassetid://" .. tostring(rawPillIcon)
+        elseif type(rawPillIcon) == "string" then
+            if rawPillIcon:find("^rbxassetid://") or rawPillIcon:find("^rbxasset://") or rawPillIcon:find("^http") then
+                pillIsAsset = true
+                pillAssetId = rawPillIcon
+            elseif rawPillIcon:match("^%d+$") then
+                pillIsAsset = true
+                pillAssetId = "rbxassetid://" .. rawPillIcon
+            end
         end
 
-        local OpenScreen = Instance.new("ScreenGui")
-        OpenScreen.Name = "SysHubOpenBtnGui"
-        OpenScreen.ResetOnSpawn = false
-        OpenScreen.DisplayOrder = 999
-        OpenScreen.Parent = GetGuiParent()
+        local OpenScreen = GetGuiParent():FindFirstChild("SysHubOpenBtnGui")
+        if not OpenScreen then
+            OpenScreen = Instance.new("ScreenGui")
+            OpenScreen.Name = "SysHubOpenBtnGui"
+            OpenScreen.ResetOnSpawn = false
+            OpenScreen.DisplayOrder = 999
+            OpenScreen.Parent = GetGuiParent()
+        end
 
-        local Pill = Instance.new("TextButton")
-        Pill.Name = "SysHubTopPill"
-        Pill.AnchorPoint = Vector2.new(0.5, 0)
-        Pill.Size = UDim2.fromOffset(265, 32)
-        Pill.Position = UDim2.new(0.5, 0, 0, 10)
-        Pill.BackgroundColor3 = Theme.Bg
-        Pill.BackgroundTransparency = 0.2
-        Pill.Text = ""
-        Pill.AutoButtonColor = false
-        Pill.Visible = not isVisible
-        Pill.Parent = OpenScreen
+        -- 1. TOP HORIZONTAL PILL BUTTON
+        local Pill = OpenScreen:FindFirstChild("SysHubTopPill")
+        if not Pill then
+            Pill = Instance.new("TextButton")
+            Pill.Name = "SysHubTopPill"
+            Pill.AnchorPoint = Vector2.new(0.5, 0)
+            Pill.Size = UDim2.fromOffset(270, 32)
+            Pill.Position = UDim2.new(0.5, 0, 0, 10)
+            Pill.BackgroundColor3 = Theme.Bg
+            Pill.BackgroundTransparency = 0.2
+            Pill.Text = ""
+            Pill.AutoButtonColor = false
+            Pill.Visible = not isVisible
+            Pill.Parent = OpenScreen
 
-        local PCorner = Instance.new("UICorner")
-        PCorner.CornerRadius = UDim.new(1, 0)
-        PCorner.Parent = Pill
+            local PCorner = Instance.new("UICorner")
+            PCorner.CornerRadius = UDim.new(1, 0)
+            PCorner.Parent = Pill
 
-        local PStroke = Instance.new("UIStroke")
-        PStroke.Color = Theme.Primary
-        PStroke.Thickness = 1.2
-        PStroke.Transparency = 0.35
-        PStroke.Parent = Pill
+            local PStroke = Instance.new("UIStroke")
+            PStroke.Color = Theme.Primary
+            PStroke.Thickness = 1.2
+            PStroke.Transparency = 0.35
+            PStroke.Parent = Pill
 
-        local DragHandleImg = Instance.new("ImageLabel")
-        DragHandleImg.Image = "rbxassetid://6031225882"
-        DragHandleImg.ImageColor3 = Theme.Primary
-        DragHandleImg.Size = UDim2.new(0, 14, 0, 14)
-        DragHandleImg.Position = UDim2.new(0, 10, 0.5, -7)
-        DragHandleImg.BackgroundTransparency = 1
-        DragHandleImg.Parent = Pill
+            local DragHandleImg = Instance.new("ImageLabel")
+            DragHandleImg.Image = "rbxassetid://6031225882"
+            DragHandleImg.ImageColor3 = Theme.Primary
+            DragHandleImg.Size = UDim2.new(0, 14, 0, 14)
+            DragHandleImg.Position = UDim2.new(0, 10, 0.5, -7)
+            DragHandleImg.BackgroundTransparency = 1
+            DragHandleImg.Parent = Pill
 
-        local SepLine = Instance.new("Frame")
-        SepLine.Size = UDim2.new(0, 1, 0, 16)
-        SepLine.Position = UDim2.new(0, 30, 0.5, -8)
-        SepLine.BackgroundColor3 = Theme.Border
-        SepLine.BorderSizePixel = 0
-        SepLine.Parent = Pill
+            local SepLine = Instance.new("Frame")
+            SepLine.Size = UDim2.new(0, 1, 0, 16)
+            SepLine.Position = UDim2.new(0, 30, 0.5, -8)
+            SepLine.BackgroundColor3 = Theme.Border
+            SepLine.BorderSizePixel = 0
+            SepLine.Parent = Pill
 
-        local POrb = Instance.new("TextLabel")
-        POrb.Text = iconEmoji
-        POrb.Font = Enum.Font.GothamBold
-        POrb.TextSize = 13
-        POrb.TextColor3 = Theme.PrimaryLight
-        POrb.Size = UDim2.new(0, 20, 1, 0)
-        POrb.Position = UDim2.new(0, 36, 0, 0)
-        POrb.BackgroundTransparency = 1
-        POrb.Parent = Pill
+            local PTitle = Instance.new("TextLabel")
+            PTitle.Name = "PTitle"
+            PTitle.Text = pillTitle
+            PTitle.Font = Enum.Font.GothamBold
+            PTitle.TextSize = 11.5
+            PTitle.TextColor3 = Theme.Text
+            PTitle.Size = UDim2.new(1, -66, 1, 0)
+            PTitle.Position = UDim2.new(0, 60, 0, 0)
+            PTitle.TextXAlignment = Enum.TextXAlignment.Left
+            PTitle.TextTruncate = Enum.TextTruncate.AtEnd
+            PTitle.BackgroundTransparency = 1
+            PTitle.Parent = Pill
 
-        local PTitle = Instance.new("TextLabel")
-        PTitle.Text = pillTitle
-        PTitle.Font = Enum.Font.GothamBold
-        PTitle.TextSize = 11.5
-        PTitle.TextColor3 = Theme.Text
-        PTitle.Size = UDim2.new(1, -66, 1, 0)
-        PTitle.Position = UDim2.new(0, 60, 0, 0)
-        PTitle.TextXAlignment = Enum.TextXAlignment.Left
-        PTitle.TextTruncate = Enum.TextTruncate.AtEnd
-        PTitle.BackgroundTransparency = 1
-        PTitle.Parent = Pill
+            -- Drag Logic untuk Pill dengan proteksi didMove (mencegah klik tak sengaja saat digeser)
+            local draggingPill = false
+            local dragStartPill, startPosPill
+            local didMovePill = false
+
+            Pill.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    draggingPill = true
+                    didMovePill = false
+                    dragStartPill = input.Position
+                    startPosPill = Pill.Position
+                end
+            end)
+
+            UserInputService.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    if draggingPill then
+                        draggingPill = false
+                        if not didMovePill then
+                            SetUIVisibility(true)
+                        end
+                    end
+                end
+            end)
+
+            UserInputService.InputChanged:Connect(function(input)
+                if draggingPill and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                    local delta = input.Position - dragStartPill
+                    if delta.Magnitude > 4 then
+                        didMovePill = true
+                    end
+                    Pill.Position = UDim2.new(
+                        startPosPill.X.Scale,
+                        startPosPill.X.Offset + delta.X,
+                        startPosPill.Y.Scale,
+                        startPosPill.Y.Offset + delta.Y
+                    )
+                end
+            end)
+
+            Pill.MouseEnter:Connect(function()
+                Tween(Pill, TweenInfo.new(0.2), { BackgroundColor3 = Theme.SurfaceHover })
+            end)
+            Pill.MouseLeave:Connect(function()
+                Tween(Pill, TweenInfo.new(0.2), { BackgroundColor3 = Theme.Bg })
+            end)
+        end
 
         openButtonInstance = Pill
 
-        -- Drag on Pill
-        local draggingPill = false
-        local dragStartPill, startPosPill
+        -- Perbarui Icon & Title pada Top Pill
+        local oldOrb = Pill:FindFirstChild("POrb")
+        if oldOrb then oldOrb:Destroy() end
 
-        Pill.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                draggingPill = true
-                dragStartPill = input.Position
-                startPosPill = Pill.Position
-            end
-        end)
+        if pillIsAsset then
+            local POrbImg = Instance.new("ImageLabel")
+            POrbImg.Name = "POrb"
+            POrbImg.Image = pillAssetId
+            POrbImg.ImageColor3 = Theme.PrimaryLight
+            POrbImg.Size = UDim2.new(0, 16, 0, 16)
+            POrbImg.Position = UDim2.new(0, 36, 0.5, -8)
+            POrbImg.BackgroundTransparency = 1
+            POrbImg.Parent = Pill
+        else
+            local POrb = Instance.new("TextLabel")
+            POrb.Name = "POrb"
+            POrb.Text = GetIconChar(rawPillIcon)
+            POrb.Font = Enum.Font.GothamBold
+            POrb.TextSize = 13
+            POrb.TextColor3 = Theme.PrimaryLight
+            POrb.Size = UDim2.new(0, 20, 1, 0)
+            POrb.Position = UDim2.new(0, 36, 0, 0)
+            POrb.BackgroundTransparency = 1
+            POrb.Parent = Pill
+        end
 
-        UserInputService.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                draggingPill = false
-            end
-        end)
+        local pTitleLabel = Pill:FindFirstChild("PTitle")
+        if pTitleLabel then
+            pTitleLabel.Text = pillTitle
+        end
 
-        UserInputService.InputChanged:Connect(function(input)
-            if draggingPill and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                local delta = input.Position - dragStartPill
-                Pill.Position = UDim2.new(
-                    startPosPill.X.Scale,
-                    startPosPill.X.Offset + delta.X,
-                    startPosPill.Y.Scale,
-                    startPosPill.Y.Offset + delta.Y
-                )
-            end
-        end)
+        -- 2. FLOATING SYSHUB LOGO BUTTON (Kotak Mengambang Sesuai Gambar)
+        local FloatLogo = OpenScreen:FindFirstChild("SysHubFloatingLogo")
+        if not FloatLogo then
+            FloatLogo = Instance.new("TextButton")
+            FloatLogo.Name = "SysHubFloatingLogo"
+            FloatLogo.Size = UDim2.fromOffset(46, 46)
+            FloatLogo.Position = UDim2.new(0, 24, 0.45, 0)
+            FloatLogo.BackgroundColor3 = Color3.fromRGB(15, 20, 30)
+            FloatLogo.BackgroundTransparency = 0
+            FloatLogo.Text = ""
+            FloatLogo.AutoButtonColor = false
+            FloatLogo.Visible = not isVisible
+            FloatLogo.Parent = OpenScreen
 
-        Pill.MouseButton1Click:Connect(function()
-            SetUIVisibility(true)
-        end)
+            local FCorner = Instance.new("UICorner")
+            FCorner.CornerRadius = UDim.new(0, 12)
+            FCorner.Parent = FloatLogo
+
+            local FStroke = Instance.new("UIStroke")
+            FStroke.Color = Theme.Primary
+            FStroke.Thickness = 1.8
+            FStroke.Transparency = 0.15
+            FStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            FStroke.Parent = FloatLogo
+
+            -- Logo Image (SysHub Monogram Blue: rbxassetid://140026247905567)
+            local LogoImage = Instance.new("ImageLabel")
+            LogoImage.Name = "LogoImage"
+            LogoImage.Image = "rbxassetid://140026247905567"
+            LogoImage.Size = UDim2.new(1, -4, 1, -4)
+            LogoImage.Position = UDim2.new(0.5, 0, 0.5, 0)
+            LogoImage.AnchorPoint = Vector2.new(0.5, 0.5)
+            LogoImage.BackgroundTransparency = 1
+            LogoImage.Parent = FloatLogo
+
+            local LICorner = Instance.new("UICorner")
+            LICorner.CornerRadius = UDim.new(0, 10)
+            LICorner.Parent = LogoImage
+
+            -- Fallback Emblem S jika asset id terhalang koneksi
+            local SFallback = Instance.new("TextLabel")
+            SFallback.Name = "SFallback"
+            SFallback.Text = "S"
+            SFallback.Font = Enum.Font.GothamBold
+            SFallback.TextSize = 22
+            SFallback.TextColor3 = Color3.fromRGB(255, 255, 255)
+            SFallback.Size = UDim2.new(1, 0, 1, 0)
+            SFallback.BackgroundTransparency = 1
+            SFallback.Visible = false
+            SFallback.Parent = FloatLogo
+
+            -- Drag Logic untuk Floating Logo (Smooth Mouse & Mobile Touch)
+            local draggingFloat = false
+            local dragStartFloat, startPosFloat
+            local didMoveFloat = false
+
+            FloatLogo.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    draggingFloat = true
+                    didMoveFloat = false
+                    dragStartFloat = input.Position
+                    startPosFloat = FloatLogo.Position
+                end
+            end)
+
+            UserInputService.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    if draggingFloat then
+                        draggingFloat = false
+                        if not didMoveFloat then
+                            SetUIVisibility(true)
+                        end
+                    end
+                end
+            end)
+
+            UserInputService.InputChanged:Connect(function(input)
+                if draggingFloat and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                    local delta = input.Position - dragStartFloat
+                    if delta.Magnitude > 4 then
+                        didMoveFloat = true
+                    end
+                    FloatLogo.Position = UDim2.new(
+                        startPosFloat.X.Scale,
+                        startPosFloat.X.Offset + delta.X,
+                        startPosFloat.Y.Scale,
+                        startPosFloat.Y.Offset + delta.Y
+                    )
+                end
+            end)
+
+            -- Subtle Hover Glow Effect
+            FloatLogo.MouseEnter:Connect(function()
+                Tween(FloatLogo, TweenInfo.new(0.2), { BackgroundColor3 = Theme.SurfaceHover })
+                Tween(FStroke, TweenInfo.new(0.2), { Color = Theme.PrimaryLight })
+            end)
+            FloatLogo.MouseLeave:Connect(function()
+                Tween(FloatLogo, TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(15, 20, 30) })
+                Tween(FStroke, TweenInfo.new(0.2), { Color = Theme.Primary })
+            end)
+        end
+
+        floatingLogoInstance = FloatLogo
     end
 
     -- ==============================================================================
@@ -901,7 +1141,23 @@ function SysHubUI:CreateWindow(windowConfig)
     function WindowHandler:Tab(tabConfig)
         tabConfig = tabConfig or {}
         local tabName = tabConfig.Title or tabConfig.Name or "Tab"
-        local iconChar = GetIconChar(tabConfig.Icon or tabName)
+        local rawIcon = tabConfig.Icon or tabName
+        local isAsset = false
+        local assetId = ""
+        if type(rawIcon) == "number" then
+            isAsset = true
+            assetId = "rbxassetid://" .. tostring(rawIcon)
+        elseif type(rawIcon) == "string" then
+            if rawIcon:find("^rbxassetid://") or rawIcon:find("^rbxasset://") or rawIcon:find("^http") then
+                isAsset = true
+                assetId = rawIcon
+            elseif rawIcon:match("^%d+$") then
+                isAsset = true
+                assetId = "rbxassetid://" .. rawIcon
+            end
+        end
+
+        local iconChar = not isAsset and GetIconChar(rawIcon) or ""
 
         -- Slim Sidebar Icon Button
         local TabBtn = Instance.new("TextButton")
@@ -909,7 +1165,7 @@ function SysHubUI:CreateWindow(windowConfig)
         TabBtn.Size = UDim2.new(0, 36, 0, 36)
         TabBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         TabBtn.BackgroundTransparency = 1
-        TabBtn.Text = iconChar
+        TabBtn.Text = isAsset and "" or iconChar
         TabBtn.Font = Enum.Font.GothamBold
         TabBtn.TextSize = 16
         TabBtn.TextColor3 = Theme.TextMuted
@@ -919,6 +1175,18 @@ function SysHubUI:CreateWindow(windowConfig)
         local TabBtnCorner = Instance.new("UICorner")
         TabBtnCorner.CornerRadius = UDim.new(0, 8)
         TabBtnCorner.Parent = TabBtn
+
+        local TabIconImg = nil
+        if isAsset then
+            TabIconImg = Instance.new("ImageLabel")
+            TabIconImg.Name = "AssetIcon"
+            TabIconImg.Image = assetId
+            TabIconImg.Size = UDim2.new(0, 18, 0, 18)
+            TabIconImg.Position = UDim2.new(0.5, -9, 0.5, -9)
+            TabIconImg.BackgroundTransparency = 1
+            TabIconImg.ImageColor3 = Theme.TextMuted
+            TabIconImg.Parent = TabBtn
+        end
 
         -- Tooltip Hover on Slim Icon
         local Tooltip = Instance.new("TextLabel")
@@ -952,6 +1220,9 @@ function SysHubUI:CreateWindow(windowConfig)
                     BackgroundTransparency = 0.6,
                     TextColor3 = Color3.fromRGB(255, 255, 255)
                 })
+                if TabIconImg then
+                    Tween(TabIconImg, TweenInfo.new(0.15), { ImageColor3 = Color3.fromRGB(255, 255, 255) })
+                end
             end
         end)
         TabBtn.MouseLeave:Connect(function()
@@ -962,6 +1233,9 @@ function SysHubUI:CreateWindow(windowConfig)
                     BackgroundTransparency = 1,
                     TextColor3 = Theme.TextMuted
                 })
+                if TabIconImg then
+                    Tween(TabIconImg, TweenInfo.new(0.15), { ImageColor3 = Theme.TextMuted })
+                end
             end
         end)
 
@@ -1030,6 +1304,7 @@ function SysHubUI:CreateWindow(windowConfig)
 
         local TabObject = {
             Button = TabBtn,
+            IconImg = TabIconImg,
             Page = Page,
             Name = tabName,
             Container = ColumnsContainer,
@@ -1050,6 +1325,9 @@ function SysHubUI:CreateWindow(windowConfig)
                         TextColor3 = Theme.TextMuted
                     })
                 end
+                if t.IconImg then
+                    Tween(t.IconImg, TweenInfo.new(0.2), { ImageColor3 = Theme.TextMuted })
+                end
             end
 
             Page.Visible = true
@@ -1059,6 +1337,9 @@ function SysHubUI:CreateWindow(windowConfig)
                 BackgroundTransparency = 0,
                 TextColor3 = Color3.fromRGB(255, 255, 255)
             })
+            if TabIconImg then
+                Tween(TabIconImg, TweenInfo.new(0.2), { ImageColor3 = Color3.fromRGB(255, 255, 255) })
+            end
             WindowHandler.CurrentTab = TabObject
             UpdateSearch(SearchInput.Text)
         end
@@ -1722,15 +2003,44 @@ function SysHubUI:CreateWindow(windowConfig)
                 SecHeader.Parent = SecCard
 
                 -- Category Icon (Electric Blue)
-                local CatIcon = Instance.new("TextLabel")
-                CatIcon.Text = categoryIcon
-                CatIcon.Font = Enum.Font.GothamBold
-                CatIcon.TextSize = 13
-                CatIcon.TextColor3 = Theme.Primary
-                CatIcon.Size = UDim2.new(0, 20, 1, 0)
-                CatIcon.Position = UDim2.new(0, 10, 0, 0)
-                CatIcon.BackgroundTransparency = 1
-                CatIcon.Parent = SecHeader
+                local secRawIcon = secConfig.Icon or secTitle
+                local secIsAsset = false
+                local secAssetId = ""
+                if type(secRawIcon) == "number" then
+                    secIsAsset = true
+                    secAssetId = "rbxassetid://" .. tostring(secRawIcon)
+                elseif type(secRawIcon) == "string" then
+                    if secRawIcon:find("^rbxassetid://") or secRawIcon:find("^rbxasset://") or secRawIcon:find("^http") then
+                        secIsAsset = true
+                        secAssetId = secRawIcon
+                    elseif secRawIcon:match("^%d+$") then
+                        secIsAsset = true
+                        secAssetId = "rbxassetid://" .. secRawIcon
+                    end
+                end
+
+                local CatIcon = nil
+                if secIsAsset then
+                    CatIcon = Instance.new("ImageLabel")
+                    CatIcon.Name = "CatIcon"
+                    CatIcon.Image = secAssetId
+                    CatIcon.ImageColor3 = Theme.Primary
+                    CatIcon.Size = UDim2.new(0, 16, 0, 16)
+                    CatIcon.Position = UDim2.new(0, 10, 0.5, -8)
+                    CatIcon.BackgroundTransparency = 1
+                    CatIcon.Parent = SecHeader
+                else
+                    CatIcon = Instance.new("TextLabel")
+                    CatIcon.Name = "CatIcon"
+                    CatIcon.Text = GetIconChar(secRawIcon)
+                    CatIcon.Font = Enum.Font.GothamBold
+                    CatIcon.TextSize = 13
+                    CatIcon.TextColor3 = Theme.Primary
+                    CatIcon.Size = UDim2.new(0, 20, 1, 0)
+                    CatIcon.Position = UDim2.new(0, 10, 0, 0)
+                    CatIcon.BackgroundTransparency = 1
+                    CatIcon.Parent = SecHeader
+                end
 
                 local SecTitleLabel = Instance.new("TextLabel")
                 SecTitleLabel.Name = "Title"
@@ -2199,6 +2509,14 @@ function SysHubUI:CreateWindow(windowConfig)
 
     -- Alias CreateTab = Tab
     WindowHandler.CreateTab = WindowHandler.Tab
+
+    -- Otomatis inisialisasi kontrol minimize ganda (Top Pill & Floating SysHub Logo)
+    pcall(function()
+        WindowHandler:EditOpenButton({
+            Title = TitleText,
+            Icon = "egg"
+        })
+    end)
 
     SysHubUI:Notify({
         Title = "⚡ SysHub Electric Dashboard",
