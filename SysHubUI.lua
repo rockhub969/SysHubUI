@@ -978,23 +978,42 @@ function SysHubUI:CreateWindow(windowConfig)
         Page.CanvasSize = UDim2.new(0, 0, 0, 0)
         Page.Parent = ContentContainer
 
-        -- Layout Simetris Penuh Sisi Kiri & Sisi Kanan (Persis Seperti Gambar Nomor 2)
+        -- Layout Simetris Penuh Sisi Kiri & Sisi Kanan (Ouroboros / Obsidian Dual-Column Engine)
         local PagePadding = Instance.new("UIPadding")
         PagePadding.PaddingTop = UDim.new(0, 10)
         PagePadding.PaddingBottom = UDim.new(0, 18)
-        PagePadding.PaddingLeft = UDim.new(0, 12)
-        PagePadding.PaddingRight = UDim.new(0, 12)
+        PagePadding.PaddingLeft = UDim.new(0, 10)
+        PagePadding.PaddingRight = UDim.new(0, 10)
         PagePadding.Parent = Page
 
-        local PageLayout = Instance.new("UIListLayout")
-        PageLayout.Padding = UDim.new(0, 8)
-        PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        PageLayout.Parent = Page
+        -- Left Column (Sisi Kiri Simetris)
+        local LeftColumn = Instance.new("Frame")
+        LeftColumn.Name = "LeftColumn"
+        LeftColumn.Size = UDim2.new(0.5, -5, 0, 0)
+        LeftColumn.Position = UDim2.new(0, 0, 0, 0)
+        LeftColumn.AutomaticSize = Enum.AutomaticSize.Y
+        LeftColumn.BackgroundTransparency = 1
+        LeftColumn.Parent = Page
 
-        -- Alias Container agar kompatibel penuh
-        local LeftColumn = Page
-        local RightColumn = Page
+        local LeftLayout = Instance.new("UIListLayout")
+        LeftLayout.Padding = UDim.new(0, 8)
+        LeftLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        LeftLayout.Parent = LeftColumn
+
+        -- Right Column (Sisi Kanan Simetris)
+        local RightColumn = Instance.new("Frame")
+        RightColumn.Name = "RightColumn"
+        RightColumn.Size = UDim2.new(0.5, -5, 0, 0)
+        RightColumn.AnchorPoint = Vector2.new(1, 0)
+        RightColumn.Position = UDim2.new(1, 0, 0, 0)
+        RightColumn.AutomaticSize = Enum.AutomaticSize.Y
+        RightColumn.BackgroundTransparency = 1
+        RightColumn.Parent = Page
+
+        local RightLayout = Instance.new("UIListLayout")
+        RightLayout.Padding = UDim.new(0, 8)
+        RightLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        RightLayout.Parent = RightColumn
 
         local TabObject = {
             Button = TabBtn,
@@ -1597,15 +1616,28 @@ function SysHubUI:CreateWindow(windowConfig)
 
                 TabObject.SectionCount = TabObject.SectionCount + 1
 
-                -- Card Outer Frame (Full-Width Seimbang Sempurna Sisi Kiri & Kanan - Gambar 2)
+                local targetColumn = LeftColumn
+                if secConfig.Side == 2 or secConfig.Side == "Right" or secConfig.Side == "right" then
+                    targetColumn = RightColumn
+                elseif secConfig.Side == 1 or secConfig.Side == "Left" or secConfig.Side == "left" then
+                    targetColumn = LeftColumn
+                else
+                    if TabObject.SectionCount % 2 == 1 then
+                        targetColumn = LeftColumn
+                    else
+                        targetColumn = RightColumn
+                    end
+                end
+
+                -- Card Outer Frame (Ouroboros / Obsidian Dual-Column Groupbox)
                 local SecCard = Instance.new("Frame")
                 SecCard.Name = "Groupbox_" .. secTitle
-                SecCard.LayoutOrder = 10 + TabObject.SectionCount
+                SecCard.LayoutOrder = TabObject.SectionCount
                 SecCard.Size = UDim2.new(1, 0, 0, 36)
                 SecCard.AutomaticSize = isOpened and Enum.AutomaticSize.Y or Enum.AutomaticSize.None
                 SecCard.BackgroundColor3 = Theme.Surface
                 SecCard.ClipsDescendants = false
-                SecCard.Parent = Page
+                SecCard.Parent = targetColumn
 
                 local CardCorner = Instance.new("UICorner")
                 CardCorner.CornerRadius = UDim.new(0, 8)
@@ -1724,7 +1756,7 @@ function SysHubUI:CreateWindow(windowConfig)
                 Card.Size = UDim2.new(1, 0, 0, 0)
                 Card.AutomaticSize = Enum.AutomaticSize.Y
                 Card.BackgroundColor3 = Theme.Surface
-                Card.Parent = Page
+                Card.Parent = LeftColumn
 
                 local CCorner = Instance.new("UICorner")
                 CCorner.CornerRadius = UDim.new(0, 8)
@@ -1789,7 +1821,37 @@ function SysHubUI:CreateWindow(windowConfig)
                 CLayout.SortOrder = Enum.SortOrder.LayoutOrder
                 CLayout.Parent = ContentFrame
 
-                -- Full-Width Profile Stats (Persis Seperti Gambar Nomor 2)
+                -- Avatar Image Profil (Tampilan Eksklusif Gambar 1)
+                local AvatarContainer = Instance.new("Frame")
+                AvatarContainer.Size = UDim2.new(1, 0, 0, 116)
+                AvatarContainer.BackgroundTransparency = 1
+                AvatarContainer.Parent = ContentFrame
+
+                local AvatarImg = Instance.new("ImageLabel")
+                AvatarImg.Size = UDim2.new(0, 110, 0, 110)
+                AvatarImg.AnchorPoint = Vector2.new(0.5, 0.5)
+                AvatarImg.Position = UDim2.new(0.5, 0, 0.5, 0)
+                AvatarImg.BackgroundColor3 = Color3.fromRGB(13, 16, 24)
+                AvatarImg.ScaleType = Enum.ScaleType.Fit
+                AvatarImg.Parent = AvatarContainer
+
+                local ACorner = Instance.new("UICorner")
+                ACorner.CornerRadius = UDim.new(0, 8)
+                ACorner.Parent = AvatarImg
+
+                local AStroke = Instance.new("UIStroke")
+                AStroke.Color = Theme.Border
+                AStroke.Thickness = 1
+                AStroke.Parent = AvatarImg
+
+                pcall(function()
+                    local thumbType = Enum.ThumbnailType.AvatarBust
+                    local thumbSize = Enum.ThumbnailSize.Size420x420
+                    local content = Players:GetUserThumbnailAsync(LocalPlayer.UserId, thumbType, thumbSize)
+                    AvatarImg.Image = content
+                end)
+
+                -- Full-Width Profile Stats (Persis Seperti Gambar 1)
                 local function AddStat(label, val, valColor)
                     local Row = Instance.new("Frame")
                     Row.Size = UDim2.new(1, 0, 0, 18)
@@ -1854,11 +1916,11 @@ function SysHubUI:CreateWindow(windowConfig)
             function Elements:SessionCard()
                 local Card = Instance.new("Frame")
                 Card.Name = "Card_SessionCard"
-                Card.LayoutOrder = 2
+                Card.LayoutOrder = 1
                 Card.Size = UDim2.new(1, 0, 0, 0)
                 Card.AutomaticSize = Enum.AutomaticSize.Y
                 Card.BackgroundColor3 = Theme.Surface
-                Card.Parent = Page
+                Card.Parent = RightColumn
 
                 local CCorner = Instance.new("UICorner")
                 CCorner.CornerRadius = UDim.new(0, 8)
@@ -2028,6 +2090,22 @@ function SysHubUI:CreateWindow(windowConfig)
         for k, v in pairs(TabElements) do
             TabObject[k] = v
         end
+
+        function TabObject:AddLeftGroupbox(title, ...)
+            return TabObject:Section({ Title = title, Side = 1, Opened = true })
+        end
+        function TabObject:AddRightGroupbox(title, ...)
+            return TabObject:Section({ Title = title, Side = 2, Opened = true })
+        end
+        function TabObject:AddGroupbox(cfg, ...)
+            if type(cfg) == "string" then
+                return TabObject:Section({ Title = cfg, Opened = true })
+            else
+                return TabObject:Section(cfg)
+            end
+        end
+        TabObject.AddLeftTabbox = TabObject.AddLeftGroupbox
+        TabObject.AddRightTabbox = TabObject.AddRightGroupbox
 
         -- Jika Tab adalah "Player" atau memiliki flag PlayerProfile, render komponen Profil & Sesi
         if tabName:lower():find("player") or tabConfig.PlayerProfile == true then
