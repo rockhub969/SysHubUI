@@ -978,24 +978,27 @@ function SysHubUI:CreateWindow(windowConfig)
         Page.CanvasSize = UDim2.new(0, 0, 0, 0)
         Page.Parent = ContentContainer
 
-        -- Layout Simetris Penuh Sisi Kiri & Sisi Kanan (Ouroboros / Obsidian Dual-Column Engine)
+        -- DUAL-COLUMN GRID DASHBOARD (Seimbang Sempurna & Simetris Persis Gambar 2)
+        local PagePadding = Instance.new("UIPadding")
+        PagePadding.PaddingTop = UDim.new(0, 10)
+        PagePadding.PaddingBottom = UDim.new(0, 16)
+        PagePadding.PaddingLeft = UDim.new(0, 10)
+        PagePadding.PaddingRight = UDim.new(0, 10)
+        PagePadding.Parent = Page
+
         local ColumnsContainer = Instance.new("Frame")
         ColumnsContainer.Name = "DualColumns"
-        ColumnsContainer.Size = UDim2.new(1, -24, 0, 0)
-        ColumnsContainer.Position = UDim2.new(0, 12, 0, 10)
+        ColumnsContainer.Size = UDim2.new(1, 0, 0, 0)
+        ColumnsContainer.Position = UDim2.new(0, 0, 0, 0)
         ColumnsContainer.AutomaticSize = Enum.AutomaticSize.Y
         ColumnsContainer.BackgroundTransparency = 1
         ColumnsContainer.Parent = Page
-
-        local PagePadding = Instance.new("UIPadding")
-        PagePadding.PaddingBottom = UDim.new(0, 20)
-        PagePadding.Parent = Page
 
         -- Left Column (Sisi Kiri Simetris)
         local LeftColumn = Instance.new("Frame")
         LeftColumn.Name = "LeftColumn"
         LeftColumn.AnchorPoint = Vector2.new(0, 0)
-        LeftColumn.Size = UDim2.new(0.5, -7, 0, 0)
+        LeftColumn.Size = UDim2.new(0.5, -6, 0, 0)
         LeftColumn.Position = UDim2.new(0, 0, 0, 0)
         LeftColumn.AutomaticSize = Enum.AutomaticSize.Y
         LeftColumn.BackgroundTransparency = 1
@@ -1006,12 +1009,12 @@ function SysHubUI:CreateWindow(windowConfig)
         LeftLayout.SortOrder = Enum.SortOrder.LayoutOrder
         LeftLayout.Parent = LeftColumn
 
-        -- Right Column (Sisi Kanan Simetris dengan Celah Tengah Bersih 14px)
+        -- Right Column (Sisi Kanan Simetris dengan Celah Tengah Bersih 12px)
         local RightColumn = Instance.new("Frame")
         RightColumn.Name = "RightColumn"
-        RightColumn.AnchorPoint = Vector2.new(1, 0)
-        RightColumn.Size = UDim2.new(0.5, -7, 0, 0)
-        RightColumn.Position = UDim2.new(1, 0, 0, 0)
+        RightColumn.AnchorPoint = Vector2.new(0, 0)
+        RightColumn.Size = UDim2.new(0.5, -6, 0, 0)
+        RightColumn.Position = UDim2.new(0.5, 6, 0, 0)
         RightColumn.AutomaticSize = Enum.AutomaticSize.Y
         RightColumn.BackgroundTransparency = 1
         RightColumn.Parent = ColumnsContainer
