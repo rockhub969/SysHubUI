@@ -209,14 +209,34 @@ end
 -- ==============================================================================
 function SysHubUI:CreateWindow(windowConfig)
     windowConfig = windowConfig or {}
-    local TitleText = windowConfig.Title or "SysHub Dashboard"
-    local FooterText = windowConfig.Footer or "+1 Loot To Forge • SysHub Edition"
-    local ToggleKey = windowConfig.Keybind or SysHubUI.DefaultKeybind
-    local WindowSize = windowConfig.Size or UDim2.fromOffset(760, 510)
-    -- Pastikan ukuran window proporsional untuk dual-column dashboard
-    if WindowSize.X.Offset < 720 then
-        WindowSize = UDim2.fromOffset(750, math.max(WindowSize.Y.Offset, 480))
+
+    -- Deteksi Nama Game Roblox Asli secara Otomatis
+    local detectedGameName = "Roblox Game"
+    pcall(function()
+        local prod = MarketplaceService:GetProductInfo(game.PlaceId)
+        if prod and prod.Name and prod.Name ~= "" then
+            detectedGameName = prod.Name
+        end
+    end)
+
+    local TitleText = windowConfig.Title or ("SysHub - " .. detectedGameName)
+
+    -- Sinkronisasi Footer Game Sesuai Game yang Dimainkan
+    local FooterText = windowConfig.Footer
+    if not FooterText or FooterText:find("Loot To Forge") then
+        if windowConfig.Subtitle and not windowConfig.Subtitle:find("Glassmorphism") then
+            FooterText = windowConfig.Subtitle
+        else
+            FooterText = detectedGameName .. " • SysHub Edition"
+        end
     end
+
+    local ToggleKey = windowConfig.Keybind or SysHubUI.DefaultKeybind
+    local requestedSize = windowConfig.Size or UDim2.fromOffset(760, 490)
+    -- Pastikan ukuran window lega dan tidak terpotong (minimal lebar 740, tinggi 460)
+    local finalWidth = math.max(requestedSize.X.Offset, 750)
+    local finalHeight = math.max(requestedSize.Y.Offset, 480)
+    local WindowSize = UDim2.fromOffset(finalWidth, finalHeight)
 
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "SysHub_ObsidianDashboard"
@@ -383,8 +403,8 @@ function SysHubUI:CreateWindow(windowConfig)
     -- Window Controls (Notification bell, Minimize, Drag Icon)
     local WindowControls = Instance.new("Frame")
     WindowControls.Name = "Controls"
-    WindowControls.Size = UDim2.new(0, 100, 1, 0)
-    WindowControls.Position = UDim2.new(1, -108, 0, 0)
+    WindowControls.Size = UDim2.new(0, 106, 1, 0)
+    WindowControls.Position = UDim2.new(1, -114, 0, 0)
     WindowControls.BackgroundTransparency = 1
     WindowControls.Parent = Header
 
@@ -395,6 +415,7 @@ function SysHubUI:CreateWindow(windowConfig)
     CtrlLayout.Padding = UDim.new(0, 6)
     CtrlLayout.Parent = WindowControls
 
+    -- 1. Bell Button
     local BellBtn = Instance.new("TextButton")
     BellBtn.Name = "Bell"
     BellBtn.Text = "🔔"
@@ -408,12 +429,31 @@ function SysHubUI:CreateWindow(windowConfig)
     BellCorner.CornerRadius = UDim.new(0, 6)
     BellCorner.Parent = BellBtn
 
+    -- 2. Drag Handle Button (Image 100% Anti-Tofu Kotak)
+    local DragBtn = Instance.new("ImageButton")
+    DragBtn.Name = "DragGrip"
+    DragBtn.Size = UDim2.new(0, 26, 0, 26)
+    DragBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    DragBtn.BackgroundTransparency = 0.95
+    DragBtn.AutoButtonColor = false
+    DragBtn.Image = "rbxassetid://10747373176" -- Lucide Move / 4-way arrow
+    DragBtn.ImageColor3 = Theme.Primary
+    DragBtn.ScaleType = Enum.ScaleType.Fit
+    DragBtn.Parent = WindowControls
+    local DragCorner = Instance.new("UICorner")
+    DragCorner.CornerRadius = UDim.new(0, 6)
+    DragCorner.Parent = DragBtn
+    local DragPad = Instance.new("UIPadding")
+    DragPad.PaddingTop = UDim.new(0, 5)
+    DragPad.PaddingBottom = UDim.new(0, 5)
+    DragPad.PaddingLeft = UDim.new(0, 5)
+    DragPad.PaddingRight = UDim.new(0, 5)
+    DragPad.Parent = DragBtn
+
+    -- 3. Minimize Button (Menggunakan Garis Frame Presisi Anti-Tofu)
     local MinBtn = Instance.new("TextButton")
     MinBtn.Name = "Minimize"
-    MinBtn.Text = "─"
-    MinBtn.Font = Enum.Font.GothamBold
-    MinBtn.TextSize = 12
-    MinBtn.TextColor3 = Theme.TextMuted
+    MinBtn.Text = ""
     MinBtn.Size = UDim2.new(0, 26, 0, 26)
     MinBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     MinBtn.BackgroundTransparency = 0.95
@@ -423,22 +463,15 @@ function SysHubUI:CreateWindow(windowConfig)
     MinCorner.CornerRadius = UDim.new(0, 6)
     MinCorner.Parent = MinBtn
 
-    local DragIcon = Instance.new("TextButton")
-    DragIcon.Name = "DragGrip"
-    DragIcon.Text = "✥"
-    DragIcon.Font = Enum.Font.GothamBold
-    DragIcon.TextSize = 14
-    DragIcon.TextColor3 = Theme.Primary
-    DragIcon.Size = UDim2.new(0, 26, 0, 26)
-    DragIcon.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    DragIcon.BackgroundTransparency = 0.95
-    DragIcon.AutoButtonColor = false
-    DragIcon.Parent = WindowControls
-    local DragCorner = Instance.new("UICorner")
-    DragCorner.CornerRadius = UDim.new(0, 6)
-    DragCorner.Parent = DragIcon
+    local MinBar = Instance.new("Frame")
+    MinBar.Size = UDim2.new(0, 11, 0, 2)
+    MinBar.AnchorPoint = Vector2.new(0.5, 0.5)
+    MinBar.Position = UDim2.new(0.5, 0, 0.5, 0)
+    MinBar.BackgroundColor3 = Theme.TextMuted
+    MinBar.BorderSizePixel = 0
+    MinBar.Parent = MinBtn
 
-    for _, btn in ipairs({ BellBtn, MinBtn, DragIcon }) do
+    for _, btn in ipairs({ BellBtn, DragBtn, MinBtn }) do
         btn.MouseEnter:Connect(function()
             Tween(btn, TweenInfo.new(0.15), { BackgroundTransparency = 0.85 })
         end)
@@ -450,7 +483,7 @@ function SysHubUI:CreateWindow(windowConfig)
     BellBtn.MouseButton1Click:Connect(function()
         SysHubUI:Notify({
             Title = "✦ SysHub Notifications",
-            Content = "All systems operational • Version 3.0",
+            Content = "Game: " .. detectedGameName .. "\nStatus: All systems operational",
             Duration = 3,
             Color = Theme.Primary
         })
@@ -475,7 +508,7 @@ function SysHubUI:CreateWindow(windowConfig)
     end
 
     Header.InputBegan:Connect(OnDragBegan)
-    DragIcon.InputBegan:Connect(OnDragBegan)
+    DragBtn.InputBegan:Connect(OnDragBegan)
 
     UserInputService.InputChanged:Connect(function(input)
         if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
@@ -550,7 +583,7 @@ function SysHubUI:CreateWindow(windowConfig)
     FooterLabel.Font = Enum.Font.Gotham
     FooterLabel.TextSize = 10.5
     FooterLabel.TextColor3 = Theme.PrimaryLight
-    FooterLabel.Size = UDim2.new(1, -30, 1, 0)
+    FooterLabel.Size = UDim2.new(1, -36, 1, 0)
     FooterLabel.Position = UDim2.new(0, 12, 0, 0)
     FooterLabel.TextXAlignment = Enum.TextXAlignment.Center
     FooterLabel.BackgroundTransparency = 1
@@ -565,15 +598,43 @@ function SysHubUI:CreateWindow(windowConfig)
         end)
     end)
 
-    local ResizeGrip = Instance.new("TextLabel")
-    ResizeGrip.Text = "⤡"
-    ResizeGrip.Font = Enum.Font.GothamBold
-    ResizeGrip.TextSize = 12
-    ResizeGrip.TextColor3 = Theme.TextDark
-    ResizeGrip.Size = UDim2.new(0, 20, 1, 0)
-    ResizeGrip.Position = UDim2.new(1, -22, 0, 0)
+    -- Interaktif Handle Resize Grip (Image 100% Anti-Tofu)
+    local ResizeGrip = Instance.new("ImageButton")
+    ResizeGrip.Name = "ResizeGrip"
+    ResizeGrip.Size = UDim2.new(0, 14, 0, 14)
+    ResizeGrip.Position = UDim2.new(1, -18, 0.5, -7)
     ResizeGrip.BackgroundTransparency = 1
+    ResizeGrip.Image = "rbxassetid://10747375132" -- Lucide Corner Resize Grip
+    ResizeGrip.ImageColor3 = Theme.TextDark
+    ResizeGrip.ScaleType = Enum.ScaleType.Fit
     ResizeGrip.Parent = Footer
+
+    -- Interactive Resize Logic
+    local isResizing = false
+    local resizeStartMouse, startFrameSize
+
+    ResizeGrip.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isResizing = true
+            resizeStartMouse = input.Position
+            startFrameSize = MainFrame.AbsoluteSize
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    isResizing = false
+                end
+            end)
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if isResizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - resizeStartMouse
+            local newW = math.clamp(startFrameSize.X + delta.X, 640, 1100)
+            local newH = math.clamp(startFrameSize.Y + delta.Y, 400, 750)
+            MainFrame.Size = UDim2.fromOffset(newW, newH)
+        end
+    end)
 
     -- ==============================================================================
     -- SIDEBAR (Slim Compact Icon Sidebar - Sisi Kiri Lebar 50px)
@@ -617,23 +678,32 @@ function SysHubUI:CreateWindow(windowConfig)
     ContentContainer.ClipsDescendants = true
     ContentContainer.Parent = MainFrame
 
-    -- Helper Icon Matcher
+    -- Helper Icon Matcher Komprehensif (100% Emoji Standar Anti-Tofu Kotak)
     local function GetIconChar(iconName)
-        if not iconName then return "✦" end
+        if not iconName then return "🔹" end
         local l = iconName:lower()
         if l:find("user") or l:find("player") or l:find("profile") then return "👤"
         elseif l:find("farm") or l:find("sprout") or l:find("game") then return "🎮"
-        elseif l:find("coop") or l:find("warehouse") or l:find("tower") or l:find("castle") then return "🏰"
-        elseif l:find("flock") or l:find("feather") or l:find("sword") or l:find("dungeon") then return "⚔️"
-        elseif l:find("event") or l:find("sparkles") or l:find("diamond") or l:find("gem") then return "💎"
-        elseif l:find("reward") or l:find("gift") then return "🎁"
-        elseif l:find("misc") or l:find("server") or l:find("pickaxe") or l:find("tool") then return "⛏️"
+        elseif l:find("coop") or l:find("feeder") or l:find("recycler") or l:find("warehouse") then return "🌾"
+        elseif l:find("flock") or l:find("feather") or l:find("ayam") or l:find("chicken") then return "🐔"
+        elseif l:find("sell") or l:find("coin") or l:find("money") then return "💰"
+        elseif l:find("promote") or l:find("fuse") or l:find("roll") or l:find("charm") or l:find("fav") then return "✨"
+        elseif l:find("tower") or l:find("castle") then return "🏰"
+        elseif l:find("sword") or l:find("dungeon") or l:find("boss") or l:find("goose") or l:find("arena") or l:find("battle") then return "⚔️"
+        elseif l:find("ufo") or l:find("chaos") then return "🛸"
+        elseif l:find("event") or l:find("diamond") or l:find("gem") then return "💎"
+        elseif l:find("reward") or l:find("gift") or l:find("claim") or l:find("code") or l:find("milestone") then return "🎁"
+        elseif l:find("misc") or l:find("tool") or l:find("pickaxe") then return "⛏️"
+        elseif l:find("server") then return "🌐"
+        elseif l:find("fps") or l:find("boost") or l:find("speed") or l:find("fast") then return "⚡"
+        elseif l:find("config") or l:find("setting") or l:find("gear") or l:find("manager") then return "⚙️"
+        elseif l:find("esp") or l:find("visual") then return "👁️"
+        elseif l:find("streamer") or l:find("video") then return "🎥"
         elseif l:find("webhook") or l:find("link") then return "🔗"
-        elseif l:find("info") or l:find("about") then return "ℹ️"
-        elseif l:find("setting") or l:find("gear") then return "⚙️"
-        elseif l:find("egg") then return "🥚"
+        elseif l:find("info") or l:find("about") or l:find("help") or l:find("problem") then return "ℹ️"
+        elseif l:find("egg") or l:find("ancient") or l:find("jurassic") then return "🥚"
         end
-        return "✦"
+        return "🔹"
     end
 
     local WindowHandler = {
@@ -728,19 +798,17 @@ function SysHubUI:CreateWindow(windowConfig)
         PStroke.Transparency = 0.35
         PStroke.Parent = Pill
 
-        local DragHandle = Instance.new("TextLabel")
-        DragHandle.Text = "✥"
-        DragHandle.Font = Enum.Font.GothamBold
-        DragHandle.TextSize = 13
-        DragHandle.TextColor3 = Theme.Primary
-        DragHandle.Size = UDim2.new(0, 20, 1, 0)
-        DragHandle.Position = UDim2.new(0, 8, 0, 0)
-        DragHandle.BackgroundTransparency = 1
-        DragHandle.Parent = Pill
+        local DragHandleImg = Instance.new("ImageLabel")
+        DragHandleImg.Image = "rbxassetid://10747373176"
+        DragHandleImg.ImageColor3 = Theme.Primary
+        DragHandleImg.Size = UDim2.new(0, 14, 0, 14)
+        DragHandleImg.Position = UDim2.new(0, 10, 0.5, -7)
+        DragHandleImg.BackgroundTransparency = 1
+        DragHandleImg.Parent = Pill
 
         local SepLine = Instance.new("Frame")
         SepLine.Size = UDim2.new(0, 1, 0, 16)
-        SepLine.Position = UDim2.new(0, 28, 0.5, -8)
+        SepLine.Position = UDim2.new(0, 30, 0.5, -8)
         SepLine.BackgroundColor3 = Theme.Border
         SepLine.BorderSizePixel = 0
         SepLine.Parent = Pill
@@ -751,7 +819,7 @@ function SysHubUI:CreateWindow(windowConfig)
         POrb.TextSize = 13
         POrb.TextColor3 = Theme.PrimaryLight
         POrb.Size = UDim2.new(0, 20, 1, 0)
-        POrb.Position = UDim2.new(0, 34, 0, 0)
+        POrb.Position = UDim2.new(0, 36, 0, 0)
         POrb.BackgroundTransparency = 1
         POrb.Parent = Pill
 
@@ -760,8 +828,8 @@ function SysHubUI:CreateWindow(windowConfig)
         PTitle.Font = Enum.Font.GothamBold
         PTitle.TextSize = 11.5
         PTitle.TextColor3 = Theme.Text
-        PTitle.Size = UDim2.new(1, -62, 1, 0)
-        PTitle.Position = UDim2.new(0, 56, 0, 0)
+        PTitle.Size = UDim2.new(1, -66, 1, 0)
+        PTitle.Position = UDim2.new(0, 60, 0, 0)
         PTitle.TextXAlignment = Enum.TextXAlignment.Left
         PTitle.TextTruncate = Enum.TextTruncate.AtEnd
         PTitle.BackgroundTransparency = 1
@@ -874,7 +942,7 @@ function SysHubUI:CreateWindow(windowConfig)
             end
         end)
 
-        -- Main Content Scrolling Frame for this Tab
+        -- Main Content Scrolling Frame for this Tab (Margin Pas Anti-Kepotong)
         local Page = Instance.new("ScrollingFrame")
         Page.Name = "Page_" .. tabName
         Page.Size = UDim2.new(1, 0, 1, 0)
@@ -890,11 +958,11 @@ function SysHubUI:CreateWindow(windowConfig)
         local PagePadding = Instance.new("UIPadding")
         PagePadding.PaddingTop = UDim.new(0, 10)
         PagePadding.PaddingBottom = UDim.new(0, 16)
-        PagePadding.PaddingLeft = UDim.new(0, 12)
-        PagePadding.PaddingRight = UDim.new(0, 12)
+        PagePadding.PaddingLeft = UDim.new(0, 10)
+        PagePadding.PaddingRight = UDim.new(0, 16) -- Ruang aman agar tidak berbenturan dengan scrollbar
         PagePadding.Parent = Page
 
-        -- DUAL-COLUMN GRID (Kolom Kiri & Kolom Kanan)
+        -- DUAL-COLUMN GRID (Kolom Kiri & Kolom Kanan Seimbang Sempurna)
         local ColumnsContainer = Instance.new("Frame")
         ColumnsContainer.Name = "DualColumns"
         ColumnsContainer.Size = UDim2.new(1, 0, 0, 0)
@@ -1258,13 +1326,11 @@ function SysHubUI:CreateWindow(windowConfig)
                 DLabel.BackgroundTransparency = 1
                 DLabel.Parent = DTrigger
 
-                local Chevron = Instance.new("TextLabel")
-                Chevron.Text = "⤢"
-                Chevron.Font = Enum.Font.GothamBold
-                Chevron.TextSize = 11
-                Chevron.TextColor3 = Theme.Primary
-                Chevron.Size = UDim2.new(0, 24, 1, 0)
-                Chevron.Position = UDim2.new(1, -26, 0, 0)
+                local Chevron = Instance.new("ImageLabel")
+                Chevron.Image = "rbxassetid://10709790948" -- Lucide Chevron
+                Chevron.ImageColor3 = Theme.Primary
+                Chevron.Size = UDim2.new(0, 14, 0, 14)
+                Chevron.Position = UDim2.new(1, -22, 0.5, -7)
                 Chevron.BackgroundTransparency = 1
                 Chevron.Parent = DTrigger
 
@@ -1343,6 +1409,7 @@ function SysHubUI:CreateWindow(windowConfig)
                                 isExpanded = false
                                 OptionList.Visible = false
                                 Tween(DropFrame, TweenInfo.new(0.2), { Size = UDim2.new(1, 0, 0, 34) })
+                                Tween(Chevron, TweenInfo.new(0.2), { Rotation = 0 })
                                 task.spawn(callback, selected)
                             end
                         end)
@@ -1358,6 +1425,7 @@ function SysHubUI:CreateWindow(windowConfig)
                     Tween(DropFrame, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                         Size = UDim2.new(1, 0, 0, targetH)
                     })
+                    Tween(Chevron, TweenInfo.new(0.2), { Rotation = isExpanded and 180 or 0 })
                 end)
 
                 DropdownObj.Set = function(v)
@@ -1593,14 +1661,13 @@ function SysHubUI:CreateWindow(windowConfig)
                 SecTitleLabel.BackgroundTransparency = 1
                 SecTitleLabel.Parent = SecHeader
 
-                local Arrow = Instance.new("TextLabel")
+                -- Panah Chevron 100% Anti-Tofu Kotak Menggunakan ImageLabel
+                local Arrow = Instance.new("ImageLabel")
                 Arrow.Name = "Chevron"
-                Arrow.Text = "▼"
-                Arrow.Font = Enum.Font.GothamBold
-                Arrow.TextSize = 10
-                Arrow.TextColor3 = Theme.Primary
-                Arrow.Size = UDim2.new(0, 20, 1, 0)
-                Arrow.Position = UDim2.new(1, -26, 0, 0)
+                Arrow.Image = "rbxassetid://10709790948" -- Lucide Chevron Down
+                Arrow.ImageColor3 = Theme.Primary
+                Arrow.Size = UDim2.new(0, 14, 0, 14)
+                Arrow.Position = UDim2.new(1, -26, 0.5, -7)
                 Arrow.Rotation = isOpened and 0 or -90
                 Arrow.BackgroundTransparency = 1
                 Arrow.Parent = SecHeader
@@ -1706,13 +1773,11 @@ function SysHubUI:CreateWindow(windowConfig)
                 UserTitle.BackgroundTransparency = 1
                 UserTitle.Parent = HeaderRow
 
-                local Chevron = Instance.new("TextLabel")
-                Chevron.Text = "▼"
-                Chevron.Font = Enum.Font.GothamBold
-                Chevron.TextSize = 10
-                Chevron.TextColor3 = Theme.Primary
-                Chevron.Size = UDim2.new(0, 20, 1, 0)
-                Chevron.Position = UDim2.new(1, -26, 0, 0)
+                local Chevron = Instance.new("ImageLabel")
+                Chevron.Image = "rbxassetid://10709790948"
+                Chevron.ImageColor3 = Theme.Primary
+                Chevron.Size = UDim2.new(0, 14, 0, 14)
+                Chevron.Position = UDim2.new(1, -26, 0.5, -7)
                 Chevron.BackgroundTransparency = 1
                 Chevron.Parent = HeaderRow
 
@@ -1858,13 +1923,11 @@ function SysHubUI:CreateWindow(windowConfig)
                 STitle.BackgroundTransparency = 1
                 STitle.Parent = HeaderRow
 
-                local Chevron = Instance.new("TextLabel")
-                Chevron.Text = "▼"
-                Chevron.Font = Enum.Font.GothamBold
-                Chevron.TextSize = 10
-                Chevron.TextColor3 = Theme.Primary
-                Chevron.Size = UDim2.new(0, 20, 1, 0)
-                Chevron.Position = UDim2.new(1, -26, 0, 0)
+                local Chevron = Instance.new("ImageLabel")
+                Chevron.Image = "rbxassetid://10709790948"
+                Chevron.ImageColor3 = Theme.Primary
+                Chevron.Size = UDim2.new(0, 14, 0, 14)
+                Chevron.Position = UDim2.new(1, -26, 0.5, -7)
                 Chevron.BackgroundTransparency = 1
                 Chevron.Parent = HeaderRow
 
@@ -1917,13 +1980,7 @@ function SysHubUI:CreateWindow(windowConfig)
                     return V
                 end
 
-                local gameName = "+1 Sabung Ayam Online"
-                pcall(function()
-                    local prod = MarketplaceService:GetProductInfo(game.PlaceId)
-                    if prod and prod.Name then gameName = prod.Name end
-                end)
-
-                AddStat("Game", gameName, Theme.PrimaryLight)
+                AddStat("Game", detectedGameName, Theme.PrimaryLight)
                 AddStat("Players", tostring(#Players:GetPlayers()) .. "/" .. tostring(Players.MaxPlayers), Theme.Success)
                 local jobStr = (game.JobId and game.JobId ~= "") and (game.JobId:sub(1, 16) .. "...") or "Studio/Private"
                 AddStat("Job", jobStr, Theme.TextMuted)
