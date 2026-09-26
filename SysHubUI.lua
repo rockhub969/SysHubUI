@@ -367,10 +367,12 @@ function SysHubUI:CreateWindow(windowConfig)
     HeaderTabTitle.Parent = Header
 
     -- Central Search Bar Capsule
+    -- Central Search Bar Capsule (Presisi Dead-Center)
     local SearchBoxFrame = Instance.new("Frame")
     SearchBoxFrame.Name = "SearchCapsule"
     SearchBoxFrame.Size = UDim2.new(0, 220, 0, 28)
-    SearchBoxFrame.Position = UDim2.new(0.5, -110, 0.5, -14)
+    SearchBoxFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    SearchBoxFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
     SearchBoxFrame.BackgroundColor3 = Theme.Surface
     SearchBoxFrame.Parent = Header
 
@@ -414,11 +416,11 @@ function SysHubUI:CreateWindow(windowConfig)
         Tween(SearchStroke, TweenInfo.new(0.2), { Color = Theme.Border })
     end)
 
-    -- Window Controls (Notification bell, Minimize, Drag Icon)
+    -- Window Controls (Notification bell & Minimize)
     local WindowControls = Instance.new("Frame")
     WindowControls.Name = "Controls"
-    WindowControls.Size = UDim2.new(0, 106, 1, 0)
-    WindowControls.Position = UDim2.new(1, -114, 0, 0)
+    WindowControls.Size = UDim2.new(0, 68, 1, 0)
+    WindowControls.Position = UDim2.new(1, -78, 0, 0)
     WindowControls.BackgroundTransparency = 1
     WindowControls.Parent = Header
 
@@ -443,28 +445,7 @@ function SysHubUI:CreateWindow(windowConfig)
     BellCorner.CornerRadius = UDim.new(0, 6)
     BellCorner.Parent = BellBtn
 
-    -- 2. Drag Handle Button (Official Move 4-Way Arrow Icon)
-    local DragBtn = Instance.new("ImageButton")
-    DragBtn.Name = "DragGrip"
-    DragBtn.Size = UDim2.new(0, 26, 0, 26)
-    DragBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    DragBtn.BackgroundTransparency = 0.95
-    DragBtn.AutoButtonColor = false
-    DragBtn.Image = "rbxassetid://6031225882" -- Official Roblox 4-way move cross arrows
-    DragBtn.ImageColor3 = Theme.Primary
-    DragBtn.ScaleType = Enum.ScaleType.Fit
-    DragBtn.Parent = WindowControls
-    local DragCorner = Instance.new("UICorner")
-    DragCorner.CornerRadius = UDim.new(0, 6)
-    DragCorner.Parent = DragBtn
-    local DragPad = Instance.new("UIPadding")
-    DragPad.PaddingTop = UDim.new(0, 5)
-    DragPad.PaddingBottom = UDim.new(0, 5)
-    DragPad.PaddingLeft = UDim.new(0, 5)
-    DragPad.PaddingRight = UDim.new(0, 5)
-    DragPad.Parent = DragBtn
-
-    -- 3. Minimize Button (Menggunakan Garis Frame Presisi Anti-Tofu)
+    -- 2. Minimize Button (Menggunakan Garis Frame Presisi Anti-Tofu)
     local MinBtn = Instance.new("TextButton")
     MinBtn.Name = "Minimize"
     MinBtn.Text = ""
@@ -485,7 +466,7 @@ function SysHubUI:CreateWindow(windowConfig)
     MinBar.BorderSizePixel = 0
     MinBar.Parent = MinBtn
 
-    for _, btn in ipairs({ BellBtn, DragBtn, MinBtn }) do
+    for _, btn in ipairs({ BellBtn, MinBtn }) do
         btn.MouseEnter:Connect(function()
             Tween(btn, TweenInfo.new(0.15), { BackgroundTransparency = 0.85 })
         end)
@@ -519,7 +500,6 @@ function SysHubUI:CreateWindow(windowConfig)
     end
 
     Header.InputBegan:Connect(StartDragging)
-    DragBtn.InputBegan:Connect(StartDragging)
 
     local isResizing = false
     local resizeStartMouse = Vector2.new()
@@ -661,7 +641,7 @@ function SysHubUI:CreateWindow(windowConfig)
     ResizeGrip.Position = UDim2.new(1, -20, 0.5, -8)
     ResizeGrip.BackgroundTransparency = 1
     ResizeGrip.Image = "rbxassetid://6031091004" -- Official Roblox Corner Expand Grip
-    ResizeGrip.ImageColor3 = Theme.TextDark
+    ResizeGrip.ImageColor3 = Theme.Primary
     ResizeGrip.ScaleType = Enum.ScaleType.Fit
     ResizeGrip.Parent = Footer
 
@@ -753,43 +733,41 @@ function SysHubUI:CreateWindow(windowConfig)
     local function UpdateSearch(query)
         query = (query or ""):lower():gsub("%s+", "")
         local curTab = WindowHandler.CurrentTab
-        if not curTab then return end
+        if not curTab or not curTab.Page then return end
 
-        for _, col in ipairs({ curTab.LeftColumn, curTab.RightColumn }) do
-            for _, card in ipairs(col:GetChildren()) do
-                if card:IsA("Frame") and (card.Name:find("Groupbox_") or card.Name:find("Card_")) then
-                    local cardTitle = card.Name:gsub("Groupbox_", ""):gsub("Card_", ""):lower():gsub("%s+", "")
-                    local cardMatches = (query == "") or cardTitle:find(query, 1, true) ~= nil
-                    local content = card:FindFirstChild("Content")
+        for _, card in ipairs(curTab.Page:GetChildren()) do
+            if card:IsA("Frame") and (card.Name:find("Groupbox_") or card.Name:find("Card_")) then
+                local cardTitle = card.Name:gsub("Groupbox_", ""):gsub("Card_", ""):lower():gsub("%s+", "")
+                local cardMatches = (query == "") or cardTitle:find(query, 1, true) ~= nil
+                local content = card:FindFirstChild("Content")
 
-                    local anyChildMatches = false
-                    if content then
-                        for _, elem in ipairs(content:GetChildren()) do
-                            if elem:IsA("GuiObject") and not elem:IsA("UIPadding") and not elem:IsA("UIListLayout") then
-                                if query == "" then
-                                    elem.Visible = true
-                                else
-                                    local elemMatches = cardMatches
-                                    if not elemMatches then
-                                        for _, desc in ipairs(elem:GetDescendants()) do
-                                            if desc:IsA("TextLabel") and desc.Text:lower():gsub("%s+", ""):find(query, 1, true) then
-                                                elemMatches = true
-                                                break
-                                            end
+                local anyChildMatches = false
+                if content then
+                    for _, elem in ipairs(content:GetChildren()) do
+                        if elem:IsA("GuiObject") and not elem:IsA("UIPadding") and not elem:IsA("UIListLayout") then
+                            if query == "" then
+                                elem.Visible = true
+                            else
+                                local elemMatches = cardMatches
+                                if not elemMatches then
+                                    for _, desc in ipairs(elem:GetDescendants()) do
+                                        if desc:IsA("TextLabel") and desc.Text:lower():gsub("%s+", ""):find(query, 1, true) then
+                                            elemMatches = true
+                                            break
                                         end
                                     end
-                                    elem.Visible = elemMatches
-                                    if elemMatches then anyChildMatches = true end
                                 end
+                                elem.Visible = elemMatches
+                                if elemMatches then anyChildMatches = true end
                             end
                         end
                     end
+                end
 
-                    if query == "" then
-                        card.Visible = true
-                    else
-                        card.Visible = cardMatches or anyChildMatches
-                    end
+                if query == "" then
+                    card.Visible = true
+                else
+                    card.Visible = cardMatches or anyChildMatches
                 end
             end
         end
@@ -993,51 +971,29 @@ function SysHubUI:CreateWindow(windowConfig)
         Page.CanvasSize = UDim2.new(0, 0, 0, 0)
         Page.Parent = ContentContainer
 
+        -- Layout Halaman Penuh Simetris (Margin Kiri & Kanan Sama Persis 14px)
         local PagePadding = Instance.new("UIPadding")
-        PagePadding.PaddingTop = UDim.new(0, 10)
-        PagePadding.PaddingBottom = UDim.new(0, 16)
-        PagePadding.PaddingLeft = UDim.new(0, 8)
-        PagePadding.PaddingRight = UDim.new(0, 14) -- Ruang aman agar tidak berbenturan dengan scrollbar
+        PagePadding.PaddingTop = UDim.new(0, 12)
+        PagePadding.PaddingBottom = UDim.new(0, 20)
+        PagePadding.PaddingLeft = UDim.new(0, 14)
+        PagePadding.PaddingRight = UDim.new(0, 14)
         PagePadding.Parent = Page
 
-        -- DUAL-COLUMN GRID (Kolom Kiri & Kolom Kanan Seimbang Sempurna)
-        local ColumnsContainer = Instance.new("Frame")
-        ColumnsContainer.Name = "DualColumns"
-        ColumnsContainer.Size = UDim2.new(1, 0, 0, 0)
-        ColumnsContainer.AutomaticSize = Enum.AutomaticSize.Y
-        ColumnsContainer.BackgroundTransparency = 1
-        ColumnsContainer.Parent = Page
+        local PageLayout = Instance.new("UIListLayout")
+        PageLayout.Padding = UDim.new(0, 10)
+        PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        PageLayout.Parent = Page
 
-        local LeftColumn = Instance.new("Frame")
-        LeftColumn.Name = "LeftColumn"
-        LeftColumn.Size = UDim2.new(0.5, -5, 0, 0)
-        LeftColumn.Position = UDim2.new(0, 0, 0, 0)
-        LeftColumn.AutomaticSize = Enum.AutomaticSize.Y
-        LeftColumn.BackgroundTransparency = 1
-        LeftColumn.Parent = ColumnsContainer
-
-        local LeftLayout = Instance.new("UIListLayout")
-        LeftLayout.Padding = UDim.new(0, 8)
-        LeftLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        LeftLayout.Parent = LeftColumn
-
-        local RightColumn = Instance.new("Frame")
-        RightColumn.Name = "RightColumn"
-        RightColumn.Size = UDim2.new(0.5, -5, 0, 0)
-        RightColumn.Position = UDim2.new(0.5, 5, 0, 0)
-        RightColumn.AutomaticSize = Enum.AutomaticSize.Y
-        RightColumn.BackgroundTransparency = 1
-        RightColumn.Parent = ColumnsContainer
-
-        local RightLayout = Instance.new("UIListLayout")
-        RightLayout.Padding = UDim.new(0, 8)
-        RightLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        RightLayout.Parent = RightColumn
+        -- Alias Container agar kompatibel penuh dengan pemanggilan terdahulu
+        local LeftColumn = Page
+        local RightColumn = Page
 
         local TabObject = {
             Button = TabBtn,
             Page = Page,
             Name = tabName,
+            Container = Page,
             LeftColumn = LeftColumn,
             RightColumn = RightColumn,
             SectionCount = 0
@@ -1145,15 +1101,15 @@ function SysHubUI:CreateWindow(windowConfig)
                 TLabel.TextSize = 11.5
                 TLabel.TextColor3 = Theme.Text
                 TLabel.TextXAlignment = Enum.TextXAlignment.Left
-                TLabel.Size = UDim2.new(1, -44, 1, 0)
-                TLabel.Position = UDim2.new(0, 4, 0, 0)
+                TLabel.Size = UDim2.new(1, -54, 1, 0)
+                TLabel.Position = UDim2.new(0, 8, 0, 0)
                 TLabel.BackgroundTransparency = 1
                 TLabel.Parent = ToggleFrame
 
                 -- Track Persegi Rounded
                 local Track = Instance.new("Frame")
                 Track.Size = UDim2.new(0, 36, 0, 18)
-                Track.Position = UDim2.new(1, -38, 0.5, -9)
+                Track.Position = UDim2.new(1, -44, 0.5, -9)
                 Track.BackgroundColor3 = state and Theme.Primary or Color3.fromRGB(36, 44, 60)
                 Track.BorderSizePixel = 0
                 Track.Parent = ToggleFrame
@@ -1524,14 +1480,14 @@ function SysHubUI:CreateWindow(windowConfig)
                 ILabel.TextSize = 11.5
                 ILabel.TextColor3 = Theme.Text
                 ILabel.TextXAlignment = Enum.TextXAlignment.Left
-                ILabel.Size = UDim2.new(0.48, -8, 1, 0)
-                ILabel.Position = UDim2.new(0, 10, 0, 0)
+                ILabel.Size = UDim2.new(1, -114, 1, 0)
+                ILabel.Position = UDim2.new(0, 8, 0, 0)
                 ILabel.BackgroundTransparency = 1
                 ILabel.Parent = InputFrame
 
                 local Box = Instance.new("TextBox")
-                Box.Size = UDim2.new(0.5, -8, 0, 24)
-                Box.Position = UDim2.new(0.5, 0, 0.5, -12)
+                Box.Size = UDim2.new(0, 96, 0, 24)
+                Box.Position = UDim2.new(1, -104, 0.5, -12)
                 Box.BackgroundColor3 = Color3.fromRGB(22, 28, 40)
                 Box.Text = tostring(val)
                 Box.PlaceholderText = placeholder
@@ -1632,38 +1588,24 @@ function SysHubUI:CreateWindow(windowConfig)
                 if isOpened == nil then isOpened = true end
                 local categoryIcon = GetIconChar(secTitle)
 
-                -- Tentukan Kolom: Masukkan bergantian ke Kolom Kiri atau Kolom Kanan
-                local targetColumn = LeftColumn
-                if secConfig.Side then
-                    if secConfig.Side:lower() == "right" then
-                        targetColumn = RightColumn
-                    else
-                        targetColumn = LeftColumn
-                    end
-                else
-                    TabObject.SectionCount = TabObject.SectionCount + 1
-                    if TabObject.SectionCount % 2 == 0 then
-                        targetColumn = RightColumn
-                    else
-                        targetColumn = LeftColumn
-                    end
-                end
+                TabObject.SectionCount = TabObject.SectionCount + 1
 
-                -- Card Outer Frame
+                -- Card Outer Frame (Full-Width Seimbang Sempurna Sisi Kiri & Kanan)
                 local SecCard = Instance.new("Frame")
                 SecCard.Name = "Groupbox_" .. secTitle
+                SecCard.LayoutOrder = TabObject.SectionCount
                 SecCard.Size = UDim2.new(1, 0, 0, 36)
                 SecCard.AutomaticSize = isOpened and Enum.AutomaticSize.Y or Enum.AutomaticSize.None
                 SecCard.BackgroundColor3 = Theme.Surface
                 SecCard.ClipsDescendants = false
-                SecCard.Parent = targetColumn
+                SecCard.Parent = Page
 
                 local CardCorner = Instance.new("UICorner")
                 CardCorner.CornerRadius = UDim.new(0, 8)
                 CardCorner.Parent = SecCard
 
                 local CardStroke = Instance.new("UIStroke")
-                CardStroke.Color = Theme.Border
+                CardStroke.Color = isOpened and Theme.Primary or Theme.Border
                 CardStroke.Thickness = 1
                 CardStroke.Parent = SecCard
 
