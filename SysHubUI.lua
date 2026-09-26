@@ -1291,48 +1291,154 @@ function SysHubUI:CreateWindow(windowConfig)
                 }
             end
 
-            -- 7. SECTION (Header Card / Section Divider)
+            -- 7. SECTION (Interactive Collapsible Card Container with Smooth Accordion)
             function Elements:Section(secConfig)
                 secConfig = secConfig or {}
                 local secTitle = secConfig.Title or secConfig.Name or "Section"
+                local isOpened = secConfig.Opened
+                if isOpened == nil then isOpened = true end
 
-                local SecContainer = Instance.new("Frame")
-                SecContainer.Name = "Sec_" .. secTitle
-                SecContainer.Size = UDim2.new(1, -6, 0, 26)
-                SecContainer.BackgroundTransparency = 1
-                SecContainer.Parent = targetParent
+                -- Card Outer Frame
+                local SecCard = Instance.new("Frame")
+                SecCard.Name = "SecCard_" .. secTitle
+                SecCard.Size = UDim2.new(1, -6, 0, 38)
+                SecCard.BackgroundColor3 = Theme.Surface
+                SecCard.BackgroundTransparency = 0.45
+                SecCard.ClipsDescendants = true
+                SecCard.Parent = targetParent
+
+                local CardCorner = Instance.new("UICorner")
+                CardCorner.CornerRadius = UDim.new(0, 8)
+                CardCorner.Parent = SecCard
+
+                local CardStroke = Instance.new("UIStroke")
+                CardStroke.Color = isOpened and Theme.HoloCyan or Theme.Border
+                CardStroke.Transparency = isOpened and 0.5 or Theme.BorderTransparency
+                CardStroke.Thickness = 1
+                CardStroke.Parent = SecCard
+
+                -- Header Button (Clickable to Expand / Collapse)
+                local SecHeader = Instance.new("TextButton")
+                SecHeader.Name = "SecHeader"
+                SecHeader.Size = UDim2.new(1, 0, 0, 38)
+                SecHeader.BackgroundTransparency = 1
+                SecHeader.Text = ""
+                SecHeader.AutoButtonColor = false
+                SecHeader.Parent = SecCard
 
                 local SecPill = Instance.new("Frame")
-                SecPill.Size = UDim2.new(0, 3, 0, 13)
-                SecPill.Position = UDim2.new(0, 2, 0.5, -6.5)
+                SecPill.Name = "AccentPill"
+                SecPill.Size = UDim2.new(0, 3, 0, 15)
+                SecPill.Position = UDim2.new(0, 10, 0.5, -7.5)
                 SecPill.BackgroundColor3 = Theme.HoloCyan
                 SecPill.BorderSizePixel = 0
-                SecPill.Parent = SecContainer
+                SecPill.Parent = SecHeader
+
                 local SPCorner = Instance.new("UICorner")
                 SPCorner.CornerRadius = UDim.new(1, 0)
                 SPCorner.Parent = SecPill
 
                 local SecTitleLabel = Instance.new("TextLabel")
-                SecTitleLabel.Text = string.upper(secTitle)
+                SecTitleLabel.Name = "Title"
+                SecTitleLabel.Text = secTitle
                 SecTitleLabel.Font = Enum.Font.GothamBold
-                SecTitleLabel.TextSize = 11
-                SecTitleLabel.TextColor3 = Theme.HoloCyan
+                SecTitleLabel.TextSize = 12.5
+                SecTitleLabel.TextColor3 = Theme.Text
                 SecTitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-                SecTitleLabel.Size = UDim2.new(1, -16, 1, 0)
-                SecTitleLabel.Position = UDim2.new(0, 12, 0, 0)
+                SecTitleLabel.Size = UDim2.new(1, -70, 1, 0)
+                SecTitleLabel.Position = UDim2.new(0, 22, 0, 0)
                 SecTitleLabel.BackgroundTransparency = 1
-                SecTitleLabel.Parent = SecContainer
+                SecTitleLabel.Parent = SecHeader
 
-                local SecLine = Instance.new("Frame")
-                SecLine.Size = UDim2.new(1, -8, 0, 1)
-                SecLine.Position = UDim2.new(0, 2, 1, -1)
-                SecLine.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-                SecLine.BackgroundTransparency = 0.9
-                SecLine.BorderSizePixel = 0
-                SecLine.Parent = SecContainer
+                local Arrow = Instance.new("TextLabel")
+                Arrow.Name = "Chevron"
+                Arrow.Text = "▼"
+                Arrow.Font = Enum.Font.GothamBold
+                Arrow.TextSize = 10
+                Arrow.TextColor3 = Theme.HoloCyan
+                Arrow.Size = UDim2.new(0, 24, 1, 0)
+                Arrow.Position = UDim2.new(1, -30, 0, 0)
+                Arrow.Rotation = isOpened and 0 or -90
+                Arrow.BackgroundTransparency = 1
+                Arrow.Parent = SecHeader
 
-                -- Section inherits all element methods to place inside this page!
-                return BuildElements(targetParent)
+                -- Content Container (Holds all child elements of this section)
+                local SecContent = Instance.new("Frame")
+                SecContent.Name = "SecContent"
+                SecContent.Size = UDim2.new(1, 0, 0, 0)
+                SecContent.Position = UDim2.new(0, 0, 0, 38)
+                SecContent.BackgroundTransparency = 1
+                SecContent.Visible = isOpened
+                SecContent.Parent = SecCard
+
+                local ContentPadding = Instance.new("UIPadding")
+                ContentPadding.PaddingLeft = UDim.new(0, 8)
+                ContentPadding.PaddingRight = UDim.new(0, 8)
+                ContentPadding.PaddingTop = UDim.new(0, 4)
+                ContentPadding.PaddingBottom = UDim.new(0, 10)
+                ContentPadding.Parent = SecContent
+
+                local ContentLayout = Instance.new("UIListLayout")
+                ContentLayout.Padding = UDim.new(0, 6)
+                ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                ContentLayout.Parent = SecContent
+
+                local function UpdateHeight()
+                    if isOpened then
+                        local contentH = ContentLayout.AbsoluteContentSize.Y + 16
+                        SecContent.Size = UDim2.new(1, 0, 0, contentH)
+                        SecCard.Size = UDim2.new(1, -6, 0, 38 + contentH)
+                    else
+                        SecCard.Size = UDim2.new(1, -6, 0, 38)
+                    end
+                end
+
+                ContentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                    UpdateHeight()
+                end)
+
+                local function ToggleSection()
+                    isOpened = not isOpened
+                    SecContent.Visible = isOpened
+                    local targetRot = isOpened and 0 or -90
+                    local targetH = isOpened and (38 + ContentLayout.AbsoluteContentSize.Y + 16) or 38
+
+                    Tween(Arrow, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Rotation = targetRot })
+                    Tween(SecCard, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = UDim2.new(1, -6, 0, targetH) })
+                    Tween(CardStroke, TweenInfo.new(0.2), {
+                        Color = isOpened and Theme.HoloCyan or Theme.Border,
+                        Transparency = isOpened and 0.5 or Theme.BorderTransparency
+                    })
+                end
+
+                SecHeader.MouseButton1Click:Connect(ToggleSection)
+
+                SecHeader.MouseEnter:Connect(function()
+                    Tween(SecCard, TweenInfo.new(0.18), { BackgroundTransparency = 0.32 })
+                end)
+                SecHeader.MouseLeave:Connect(function()
+                    Tween(SecCard, TweenInfo.new(0.18), { BackgroundTransparency = 0.45 })
+                end)
+
+                task.defer(function()
+                    UpdateHeight()
+                end)
+
+                -- Child elements build into SecContent!
+                local SecElements = BuildElements(SecContent)
+                SecElements.Toggle = function(self, state)
+                    if state ~= nil then
+                        if state ~= isOpened then ToggleSection() end
+                    else
+                        ToggleSection()
+                    end
+                end
+                SecElements.Open = function() if not isOpened then ToggleSection() end end
+                SecElements.Close = function() if isOpened then ToggleSection() end end
+                SecElements.Instance = SecCard
+                SecElements.Content = SecContent
+
+                return SecElements
             end
 
             return Elements
