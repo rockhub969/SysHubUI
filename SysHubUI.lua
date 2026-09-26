@@ -982,14 +982,15 @@ function SysHubUI:CreateWindow(windowConfig)
         local PagePadding = Instance.new("UIPadding")
         PagePadding.PaddingTop = UDim.new(0, 10)
         PagePadding.PaddingBottom = UDim.new(0, 18)
-        PagePadding.PaddingLeft = UDim.new(0, 10)
-        PagePadding.PaddingRight = UDim.new(0, 10)
+        PagePadding.PaddingLeft = UDim.new(0, 12)
+        PagePadding.PaddingRight = UDim.new(0, 12)
         PagePadding.Parent = Page
 
         -- Left Column (Sisi Kiri Simetris)
         local LeftColumn = Instance.new("Frame")
         LeftColumn.Name = "LeftColumn"
-        LeftColumn.Size = UDim2.new(0.5, -5, 0, 0)
+        LeftColumn.AnchorPoint = Vector2.new(0, 0)
+        LeftColumn.Size = UDim2.new(0.5, -6, 0, 0)
         LeftColumn.Position = UDim2.new(0, 0, 0, 0)
         LeftColumn.AutomaticSize = Enum.AutomaticSize.Y
         LeftColumn.BackgroundTransparency = 1
@@ -1000,12 +1001,12 @@ function SysHubUI:CreateWindow(windowConfig)
         LeftLayout.SortOrder = Enum.SortOrder.LayoutOrder
         LeftLayout.Parent = LeftColumn
 
-        -- Right Column (Sisi Kanan Simetris)
+        -- Right Column (Sisi Kanan Simetris dengan Celah Tengah Bersih 12px)
         local RightColumn = Instance.new("Frame")
         RightColumn.Name = "RightColumn"
-        RightColumn.Size = UDim2.new(0.5, -5, 0, 0)
-        RightColumn.AnchorPoint = Vector2.new(1, 0)
-        RightColumn.Position = UDim2.new(1, 0, 0, 0)
+        RightColumn.AnchorPoint = Vector2.new(0, 0)
+        RightColumn.Size = UDim2.new(0.5, -6, 0, 0)
+        RightColumn.Position = UDim2.new(0.5, 6, 0, 0)
         RightColumn.AutomaticSize = Enum.AutomaticSize.Y
         RightColumn.BackgroundTransparency = 1
         RightColumn.Parent = Page
@@ -1648,9 +1649,15 @@ function SysHubUI:CreateWindow(windowConfig)
                 CardStroke.Thickness = 1
                 CardStroke.Parent = SecCard
 
+                local SecCardLayout = Instance.new("UIListLayout")
+                SecCardLayout.Padding = UDim.new(0, 0)
+                SecCardLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                SecCardLayout.Parent = SecCard
+
                 -- Header Button (Bisa Diklik Buka / Tutup)
                 local SecHeader = Instance.new("TextButton")
                 SecHeader.Name = "Header"
+                SecHeader.LayoutOrder = 1
                 SecHeader.Size = UDim2.new(1, 0, 0, 36)
                 SecHeader.BackgroundTransparency = 1
                 SecHeader.Text = ""
@@ -1694,8 +1701,9 @@ function SysHubUI:CreateWindow(windowConfig)
                 -- Content Container (Menyimpan seluruh kontrol toggle/slider di section ini)
                 local SecContent = Instance.new("Frame")
                 SecContent.Name = "Content"
+                SecContent.LayoutOrder = 2
                 SecContent.Size = UDim2.new(1, 0, 0, 0)
-                SecContent.Position = UDim2.new(0, 0, 0, 36)
+                SecContent.Position = UDim2.new(0, 0, 0, 0)
                 SecContent.AutomaticSize = Enum.AutomaticSize.Y
                 SecContent.BackgroundTransparency = 1
                 SecContent.Visible = isOpened
@@ -1767,8 +1775,14 @@ function SysHubUI:CreateWindow(windowConfig)
                 CStroke.Thickness = 1
                 CStroke.Parent = Card
 
+                local CardLayout = Instance.new("UIListLayout")
+                CardLayout.Padding = UDim.new(0, 0)
+                CardLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                CardLayout.Parent = Card
+
                 -- Header User
                 local HeaderRow = Instance.new("Frame")
+                HeaderRow.LayoutOrder = 1
                 HeaderRow.Size = UDim2.new(1, 0, 0, 34)
                 HeaderRow.BackgroundTransparency = 1
                 HeaderRow.Parent = Card
@@ -1803,8 +1817,9 @@ function SysHubUI:CreateWindow(windowConfig)
 
                 local ContentFrame = Instance.new("Frame")
                 ContentFrame.Name = "Content"
+                ContentFrame.LayoutOrder = 2
                 ContentFrame.Size = UDim2.new(1, 0, 0, 0)
-                ContentFrame.Position = UDim2.new(0, 0, 0, 34)
+                ContentFrame.Position = UDim2.new(0, 0, 0, 0)
                 ContentFrame.AutomaticSize = Enum.AutomaticSize.Y
                 ContentFrame.BackgroundTransparency = 1
                 ContentFrame.Parent = Card
@@ -1931,7 +1946,13 @@ function SysHubUI:CreateWindow(windowConfig)
                 CStroke.Thickness = 1
                 CStroke.Parent = Card
 
+                local CardLayout = Instance.new("UIListLayout")
+                CardLayout.Padding = UDim.new(0, 0)
+                CardLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                CardLayout.Parent = Card
+
                 local HeaderRow = Instance.new("Frame")
+                HeaderRow.LayoutOrder = 1
                 HeaderRow.Size = UDim2.new(1, 0, 0, 34)
                 HeaderRow.BackgroundTransparency = 1
                 HeaderRow.Parent = Card
@@ -1966,8 +1987,9 @@ function SysHubUI:CreateWindow(windowConfig)
 
                 local ContentFrame = Instance.new("Frame")
                 ContentFrame.Name = "Content"
+                ContentFrame.LayoutOrder = 2
                 ContentFrame.Size = UDim2.new(1, 0, 0, 0)
-                ContentFrame.Position = UDim2.new(0, 0, 0, 34)
+                ContentFrame.Position = UDim2.new(0, 0, 0, 0)
                 ContentFrame.AutomaticSize = Enum.AutomaticSize.Y
                 ContentFrame.BackgroundTransparency = 1
                 ContentFrame.Parent = Card
